@@ -1,54 +1,57 @@
 import Phaser from "phaser";
 
-import spaceImage from "../assets/space.png";
-import logo from "../assets/logo.png";
-import spaceshipSprite from "../assets/spaceship.png";
+import heroRunSprite from "../assets/hero/run.png";
+import Hero from "../entities/Hero";
 
 export class Start extends Phaser.Scene {
-  private background!: Phaser.GameObjects.TileSprite;
+  private player!: Hero;
+  private fpsText!: Phaser.GameObjects.Text;
+  private cursorKeys?: Phaser.Types.Input.Keyboard.CursorKeys;
 
   constructor() {
     super("Start");
   }
 
   preload() {
-    this.load.image("background", spaceImage);
-    this.load.image("logo", logo);
-
-    //  The ship sprite is CC0 from https://ansimuz.itch.io - check out his other work!
-    this.load.spritesheet("ship", spaceshipSprite, {
-      frameWidth: 176,
-      frameHeight: 96,
+    this.load.spritesheet("hero-run-sprite", heroRunSprite, {
+      frameWidth: 32,
+      frameHeight: 64,
     });
   }
 
   create() {
-    this.background = this.add.tileSprite(640, 360, 1280, 720, "background");
+    this.cursorKeys = this.input.keyboard?.createCursorKeys();
 
-    this.add.image(640, 180, "logo");
-
-    const ship = this.add.sprite(640, 360, "ship");
-
-    ship.anims.create({
-      key: "fly",
-      frames: this.anims.generateFrameNumbers("ship", { start: 0, end: 2 }),
-      frameRate: 15,
+    this.anims.create({
+      key: "hero-running",
+      frames: this.anims.generateFrameNumbers("hero-run-sprite"),
+      frameRate: 10,
       repeat: -1,
     });
 
-    ship.play("fly");
+    this.player = new Hero(
+      this,
+      250,
+      160,
+      "hero-run-sprite",
+      0,
+      this.cursorKeys
+    );
+    this.player.anims.play("hero-running");
 
-    this.tweens.add({
-      targets: ship,
-      y: 400,
-      duration: 1000,
-      ease: "Sine.inOut",
-      yoyo: true,
-      loop: -1,
-    });
+    this.fpsText = this.add.text(0, 0, "", { color: "#ffffff", fontSize: 12 });
+
+    const platform1 = this.add.rectangle(200, 240, 150, 15, 0x9d8e21);
+    this.physics.add.existing(platform1, true);
+    this.physics.add.collider(platform1, this.player);
+
+    const platform2 = this.add.rectangle(460, 80, 80, 15, 0xad23ba);
+    this.physics.add.existing(platform2, true);
+    this.physics.add.collider(platform2, this.player);
   }
 
-  update() {
-    this.background.tilePositionX += 4;
+  update(time: number, delta: number) {
+    const fps = Math.round(1000 / delta);
+    this.fpsText.setText(`${fps} fps`);
   }
 }

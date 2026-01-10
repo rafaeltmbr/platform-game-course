@@ -2,17 +2,27 @@ import { Start } from "./scenes/Start";
 
 const config = {
   type: Phaser.AUTO,
-  title: "Overlord Rising",
-  description: "",
   parent: "game-container",
-  width: 1280,
-  height: 720,
-  backgroundColor: "#000000",
-  pixelArt: false,
+  backgroundColor: "#33A5E7",
   scene: [Start],
   scale: {
+    width: 500,
+    height: 320,
     mode: Phaser.Scale.FIT,
     autoCenter: Phaser.Scale.CENTER_BOTH,
+  },
+  render: {
+    pixelArt: true,
+  },
+  physics: {
+    default: "arcade",
+    arcade: {
+      gravity: { y: 750 },
+      debug: true,
+      debugShowVelocity: true,
+      debugShowBody: true,
+      debugShowStaticBody: true,
+    },
   },
 };
 
