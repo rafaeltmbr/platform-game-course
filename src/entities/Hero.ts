@@ -16,14 +16,26 @@ enum HorizontalMovementState {
   TO_RIGHT = "TO_RIGHT",
 }
 
+export enum AnimationState {
+  IDLE = "IDLE",
+  PIVOT = "PIVOT",
+  RUNNING = "RUNNING",
+  JUMPING = "JUMPING",
+  FLIPPING = "FLIPPING",
+  FALLING = "FALLING",
+}
+
 export default class Hero extends Phaser.GameObjects.Sprite {
   private verticalMovementSM = new StateMachine(
-    VerticalMovementState.STANDING,
-    (e) => console.log("VerticalMovementSM state change", e)
+    VerticalMovementState.STANDING
+    //(e) => console.log("Hero.VerticalMovementSM state change", e)
   );
   private horizontalMovementSM = new StateMachine(
-    HorizontalMovementState.STILL,
-    (e) => console.log("HorizontalMovementSM state change", e)
+    HorizontalMovementState.STILL
+    //(e) => console.log("Hero.HorizontalMovementSM state change", e)
+  );
+  private animationSM = new StateMachine(AnimationState.IDLE, (e) =>
+    console.log("Hero.AnimationSM state change", e)
   );
 
   private cursorKeys?: Phaser.Types.Input.Keyboard.CursorKeys;
@@ -36,6 +48,7 @@ export default class Hero extends Phaser.GameObjects.Sprite {
     y: number,
     texture: string,
     frame: number,
+    private onAnimationStateChange: (state: AnimationState) => void,
     cursorKeys?: Phaser.Types.Input.Keyboard.CursorKeys
   ) {
     super(scene, x, y, texture, frame);
@@ -56,6 +69,7 @@ export default class Hero extends Phaser.GameObjects.Sprite {
     this.setupPhysics(body);
     this.setupHorizontalMovement(body);
     this.setupVerticalMovement(body);
+    this.setupAnimation(body);
   }
 
   private setupPhysics(body: Phaser.Physics.Arcade.Body) {
@@ -122,6 +136,7 @@ export default class Hero extends Phaser.GameObjects.Sprite {
           this.cursorKeys?.up.isDown || this.cursorKeys?.space.isDown;
 
         if (!isPressJump && body.velocity.y < -150) {
+          // Cut speed to allow short jumps after quick key release.
           body.setVelocityY(-150);
         }
       },
@@ -168,6 +183,110 @@ export default class Hero extends Phaser.GameObjects.Sprite {
     this.verticalMovementSM.update();
   }
 
+  private setupAnimation(body: Phaser.Physics.Arcade.Body) {
+    this.animationSM.addState(AnimationState.IDLE, {
+      onEnter: () => this.onAnimationStateChange(AnimationState.IDLE),
+    });
+
+    this.animationSM.addState(AnimationState.RUNNING, {
+      onEnter: () => this.onAnimationStateChange(AnimationState.RUNNING),
+    });
+
+    this.animationSM.addState(AnimationState.PIVOT, {
+      onEnter: () => this.onAnimationStateChange(AnimationState.PIVOT),
+    });
+
+    this.animationSM.addState(AnimationState.JUMPING, {
+      onEnter: () => this.onAnimationStateChange(AnimationState.JUMPING),
+    });
+
+    this.animationSM.addState(AnimationState.FLIPPING, {
+      onEnter: () => this.onAnimationStateChange(AnimationState.FLIPPING),
+    });
+
+    this.animationSM.addState(AnimationState.FALLING, {
+      onEnter: () => this.onAnimationStateChange(AnimationState.FALLING),
+    });
+
+    this.animationSM.addTransitions({
+      from: [
+        AnimationState.PIVOT,
+        AnimationState.RUNNING,
+        AnimationState.JUMPING,
+        AnimationState.FLIPPING,
+        AnimationState.FALLING,
+      ],
+      to: AnimationState.IDLE,
+      condition: () =>
+        this.verticalMovementSM.state === VerticalMovementState.STANDING &&
+        body.velocity.x === 0,
+    });
+
+    const runningStates = [
+      HorizontalMovementState.TO_LEFT,
+      HorizontalMovementState.TO_RIGHT,
+    ];
+    this.animationSM.addTransitions({
+      from: [
+        AnimationState.IDLE,
+        AnimationState.PIVOT,
+        AnimationState.JUMPING,
+        AnimationState.FLIPPING,
+        AnimationState.FALLING,
+      ],
+      to: AnimationState.RUNNING,
+      condition: () =>
+        this.verticalMovementSM.state === VerticalMovementState.STANDING &&
+        runningStates.includes(this.horizontalMovementSM.state) &&
+        body.velocity.x !== 0,
+    });
+
+    this.animationSM.addTransitions({
+      from: [AnimationState.RUNNING, AnimationState.FALLING],
+      to: AnimationState.PIVOT,
+      condition: () =>
+        this.verticalMovementSM.state === VerticalMovementState.STANDING &&
+        this.horizontalMovementSM.state === HorizontalMovementState.STILL,
+    });
+
+    const jumpingStates = [
+      VerticalMovementState.JUMPING,
+      VerticalMovementState.PRE_JUMPING,
+    ];
+    this.animationSM.addTransitions({
+      from: [AnimationState.IDLE, AnimationState.RUNNING, AnimationState.PIVOT],
+      to: AnimationState.JUMPING,
+      condition: () => jumpingStates.includes(this.verticalMovementSM.state),
+    });
+
+    this.animationSM.addTransition({
+      from: AnimationState.JUMPING,
+      to: AnimationState.FLIPPING,
+      condition: () =>
+        this.verticalMovementSM.state === VerticalMovementState.FLIPPING,
+    });
+
+    this.animationSM.addTransition({
+      from: AnimationState.FALLING,
+      to: AnimationState.FLIPPING,
+      condition: () =>
+        this.verticalMovementSM.state === VerticalMovementState.FLIPPING &&
+        body.velocity.y <= 0,
+    });
+
+    this.animationSM.addTransitions({
+      from: [
+        AnimationState.IDLE,
+        AnimationState.PIVOT,
+        AnimationState.RUNNING,
+        AnimationState.JUMPING,
+        AnimationState.FLIPPING,
+      ],
+      to: AnimationState.FALLING,
+      condition: () => body.velocity.y > 0,
+    });
+  }
+
   protected override preUpdate(time: number, delta: number): void {
     super.preUpdate(time, delta);
 
@@ -182,5 +301,6 @@ export default class Hero extends Phaser.GameObjects.Sprite {
 
     this.horizontalMovementSM.update();
     this.verticalMovementSM.update();
+    this.animationSM.update();
   }
 }

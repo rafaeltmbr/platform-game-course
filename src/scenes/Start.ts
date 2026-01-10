@@ -1,26 +1,61 @@
 import Phaser from "phaser";
 
+import heroIdleSprite from "../assets/hero/idle.png";
 import heroRunSprite from "../assets/hero/run.png";
-import Hero from "../entities/Hero";
+import heroPivotSprite from "../assets/hero/pivot.png";
+import heroJumpSprite from "../assets/hero/jump.png";
+import heroFlipSprite from "../assets/hero/spinjump.png";
+import heroFallSprite from "../assets/hero/fall.png";
+
+import Hero, { AnimationState } from "../entities/Hero";
 
 export class Start extends Phaser.Scene {
   private player!: Hero;
   private fpsText!: Phaser.GameObjects.Text;
-  private cursorKeys?: Phaser.Types.Input.Keyboard.CursorKeys;
 
   constructor() {
     super("Start");
   }
 
   preload() {
+    this.load.spritesheet("hero-idle-sprite", heroIdleSprite, {
+      frameWidth: 32,
+      frameHeight: 64,
+    });
+
     this.load.spritesheet("hero-run-sprite", heroRunSprite, {
+      frameWidth: 32,
+      frameHeight: 64,
+    });
+
+    this.load.spritesheet("hero-pivot-sprite", heroPivotSprite, {
+      frameWidth: 32,
+      frameHeight: 64,
+    });
+
+    this.load.spritesheet("hero-jump-sprite", heroJumpSprite, {
+      frameWidth: 32,
+      frameHeight: 64,
+    });
+
+    this.load.spritesheet("hero-flip-sprite", heroFlipSprite, {
+      frameWidth: 32,
+      frameHeight: 64,
+    });
+
+    this.load.spritesheet("hero-fall-sprite", heroFallSprite, {
       frameWidth: 32,
       frameHeight: 64,
     });
   }
 
   create() {
-    this.cursorKeys = this.input.keyboard?.createCursorKeys();
+    const cursorKeys = this.input.keyboard?.createCursorKeys();
+
+    this.anims.create({
+      key: "hero-idle",
+      frames: this.anims.generateFrameNumbers("hero-idle-sprite"),
+    });
 
     this.anims.create({
       key: "hero-running",
@@ -29,15 +64,55 @@ export class Start extends Phaser.Scene {
       repeat: -1,
     });
 
+    this.anims.create({
+      key: "hero-pivoting",
+      frames: this.anims.generateFrameNumbers("hero-pivot-sprite"),
+    });
+
+    this.anims.create({
+      key: "hero-jumping",
+      frames: this.anims.generateFrameNumbers("hero-jump-sprite"),
+      frameRate: 10,
+      repeat: -1,
+    });
+
+    this.anims.create({
+      key: "hero-flipping",
+      frames: this.anims.generateFrameNumbers("hero-flip-sprite"),
+      frameRate: 30,
+      repeat: -1,
+    });
+
+    this.anims.create({
+      key: "hero-falling",
+      frames: this.anims.generateFrameNumbers("hero-fall-sprite"),
+      frameRate: 10,
+      repeat: -1,
+    });
+
     this.player = new Hero(
       this,
       180,
-      160,
+      50,
       "hero-run-sprite",
       0,
-      this.cursorKeys
+      (state) => {
+        if (state === AnimationState.IDLE) {
+          this.player.anims.play("hero-idle");
+        } else if (state === AnimationState.RUNNING) {
+          this.player.anims.play("hero-running");
+        } else if (state === AnimationState.PIVOT) {
+          this.player.anims.play("hero-pivoting");
+        } else if (state === AnimationState.JUMPING) {
+          this.player.anims.play("hero-jumping");
+        } else if (state === AnimationState.FLIPPING) {
+          this.player.anims.play("hero-flipping");
+        } else if (state === AnimationState.FALLING) {
+          this.player.anims.play("hero-falling");
+        }
+      },
+      cursorKeys
     );
-    this.player.anims.play("hero-running");
 
     this.fpsText = this.add.text(0, 0, "", { color: "#ffffff", fontSize: 12 });
 
