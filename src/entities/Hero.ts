@@ -222,10 +222,6 @@ export default class Hero extends Phaser.GameObjects.Sprite {
         body.velocity.x === 0,
     });
 
-    const runningStates = [
-      HorizontalMovementState.TO_LEFT,
-      HorizontalMovementState.TO_RIGHT,
-    ];
     this.animationSM.addTransitions({
       from: [
         AnimationState.IDLE,
@@ -237,7 +233,7 @@ export default class Hero extends Phaser.GameObjects.Sprite {
       to: AnimationState.RUNNING,
       condition: () =>
         this.verticalMovementSM.state === VerticalMovementState.STANDING &&
-        runningStates.includes(this.horizontalMovementSM.state) &&
+        Math.sign(body.velocity.x) === (this.flipX ? -1 : 1) &&
         body.velocity.x !== 0,
     });
 
@@ -246,7 +242,7 @@ export default class Hero extends Phaser.GameObjects.Sprite {
       to: AnimationState.PIVOT,
       condition: () =>
         this.verticalMovementSM.state === VerticalMovementState.STANDING &&
-        this.horizontalMovementSM.state === HorizontalMovementState.STILL,
+        Math.sign(body.velocity.x) === (this.flipX ? 1 : -1),
     });
 
     const jumpingStates = [
