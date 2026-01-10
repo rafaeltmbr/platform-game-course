@@ -31,7 +31,7 @@ export class Start extends Phaser.Scene {
 
     this.player = new Hero(
       this,
-      250,
+      180,
       160,
       "hero-run-sprite",
       0,
@@ -41,11 +41,11 @@ export class Start extends Phaser.Scene {
 
     this.fpsText = this.add.text(0, 0, "", { color: "#ffffff", fontSize: 12 });
 
-    const platform1 = this.add.rectangle(200, 240, 150, 15, 0x9d8e21);
+    const platform1 = this.add.rectangle(180, 240, 150, 15, 0xf9a603);
     this.physics.add.existing(platform1, true);
     this.physics.add.collider(platform1, this.player);
 
-    const platform2 = this.add.rectangle(460, 80, 80, 15, 0xad23ba);
+    const platform2 = this.add.rectangle(460, 100, 80, 15, 0xad23ba);
     this.physics.add.existing(platform2, true);
     this.physics.add.collider(platform2, this.player);
   }
