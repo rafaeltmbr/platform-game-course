@@ -6,18 +6,25 @@ import heroPivotSprite from "../assets/hero/pivot.png";
 import heroJumpSprite from "../assets/hero/jump.png";
 import heroFlipSprite from "../assets/hero/spinjump.png";
 import heroFallSprite from "../assets/hero/fall.png";
+import tileMap from "../assets/tilemaps/level-1.json";
+import tileSet from "../assets/tilesets/world-1.png";
 
 import Hero, { AnimationState } from "../entities/Hero";
+import phaserConfig from "../phaserConfig";
 
 export class Start extends Phaser.Scene {
-  private player!: Hero;
   private fpsText!: Phaser.GameObjects.Text;
+  private hero!: Hero;
+  private map!: Phaser.Tilemaps.Tilemap;
 
   constructor() {
     super("Start");
   }
 
   preload() {
+    this.load.tilemapTiledJSON("level-1", tileMap);
+    this.load.image("world-1-sheet", tileSet);
+
     this.load.spritesheet("hero-idle-sprite", heroIdleSprite, {
       frameWidth: 32,
       frameHeight: 64,
@@ -50,8 +57,34 @@ export class Start extends Phaser.Scene {
   }
 
   create() {
-    const cursorKeys = this.input.keyboard?.createCursorKeys();
+    this.addMap();
+    this.addHero();
+    this.addStats();
+  }
 
+  private addMap() {
+    this.map = this.make.tilemap({ key: "level-1" });
+
+    const groundTiles = this.map.addTilesetImage("world-1", "world-1-sheet");
+    if (!groundTiles) return;
+    const groundLayer = this.map.createLayer("Ground", groundTiles);
+    groundLayer?.setCollision([1, 2, 4], true);
+
+    this.physics.world.setBounds(
+      0,
+      0,
+      this.map.widthInPixels,
+      this.map.heightInPixels
+    );
+    this.physics.world.setBoundsCollision(true, true, false, true);
+
+    if (phaserConfig.physics.arcade.debug) {
+      const debugGraphics = this.add.graphics();
+      groundLayer?.renderDebug(debugGraphics);
+    }
+  }
+
+  private addHero() {
     this.anims.create({
       key: "hero-idle",
       frames: this.anims.generateFrameNumbers("hero-idle-sprite"),
@@ -90,39 +123,49 @@ export class Start extends Phaser.Scene {
       repeat: -1,
     });
 
-    this.player = new Hero(
+    const cursorKeys = this.input.keyboard?.createCursorKeys();
+
+    this.hero = new Hero(
       this,
-      180,
-      50,
+      16,
+      240,
       "hero-run-sprite",
       0,
       (state) => {
         if (state === AnimationState.IDLE) {
-          this.player.anims.play("hero-idle");
+          this.hero.anims.play("hero-idle");
         } else if (state === AnimationState.RUNNING) {
-          this.player.anims.play("hero-running");
+          this.hero.anims.play("hero-running");
         } else if (state === AnimationState.PIVOT) {
-          this.player.anims.play("hero-pivoting");
+          this.hero.anims.play("hero-pivoting");
         } else if (state === AnimationState.JUMPING) {
-          this.player.anims.play("hero-jumping");
+          this.hero.anims.play("hero-jumping");
         } else if (state === AnimationState.FLIPPING) {
-          this.player.anims.play("hero-flipping");
+          this.hero.anims.play("hero-flipping");
         } else if (state === AnimationState.FALLING) {
-          this.player.anims.play("hero-falling");
+          this.hero.anims.play("hero-falling");
         }
       },
       cursorKeys
     );
 
+    this.cameras.main.startFollow(this.hero);
+    this.cameras.main.setBounds(
+      0,
+      -this.map.heightInPixels,
+      this.map.widthInPixels,
+      this.map.heightInPixels * 2
+    );
+
+    this.physics.add.collider(
+      this.hero,
+      this.map.getLayer("Ground")?.tilemapLayer!
+    );
+  }
+
+  private addStats() {
     this.fpsText = this.add.text(0, 0, "", { color: "#ffffff", fontSize: 12 });
-
-    const platform1 = this.add.rectangle(180, 240, 150, 15, 0xf9a603);
-    this.physics.add.existing(platform1, true);
-    this.physics.add.collider(platform1, this.player);
-
-    const platform2 = this.add.rectangle(460, 100, 80, 15, 0xad23ba);
-    this.physics.add.existing(platform2, true);
-    this.physics.add.collider(platform2, this.player);
+    this.fpsText.setScrollFactor(0, 0);
   }
 
   update(time: number, delta: number) {
