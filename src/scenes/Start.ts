@@ -8,6 +8,9 @@ import heroFlipSprite from "../assets/hero/spinjump.png";
 import heroFallSprite from "../assets/hero/fall.png";
 import heroDeadSprite from "../assets/hero/bonk.png";
 
+import enemyWalkSprite from "../assets/baddies/totem_walk.png";
+import enemyDieSprite from "../assets/baddies/totem_die.png";
+
 import tileMap from "../assets/tilemaps/level-1.json";
 import tileSet from "../assets/tilesets/world-1.png";
 import cloudsSet from "../assets/tilesets/clouds.png";
@@ -15,13 +18,22 @@ import cloudsSet from "../assets/tilesets/clouds.png";
 import Hero, { AnimationState, type TextKeys } from "../entities/Hero";
 import phaserConfig from "../phaserConfig";
 import { controlsState } from "../components/controls";
+import Enemy from "../entities/Enemy";
+
+interface Coordinates {
+  x: number;
+  y: number;
+}
 
 export class Start extends Phaser.Scene {
   private fpsText!: Phaser.GameObjects.Text;
   private hero!: Hero;
+  private enemy!: Enemy;
   private map!: Phaser.Tilemaps.Tilemap;
   private spikeGroup!: Phaser.Physics.Arcade.Group;
-  private heroStartCoordinates = { x: 0, y: 0 };
+  private heroStartCoordinates: Coordinates = { x: 0, y: 0 };
+  private enemyStartCoordinates: Coordinates = { x: 0, y: 0 };
+  private enemyEndCoordinates: Coordinates = { x: 0, y: 0 };
 
   constructor() {
     super("Start");
@@ -73,11 +85,22 @@ export class Start extends Phaser.Scene {
       frameWidth: 32,
       frameHeight: 64,
     });
+
+    this.load.spritesheet("enemy-walk-sprite", enemyWalkSprite, {
+      frameWidth: 32,
+      frameHeight: 32,
+    });
+
+    this.load.spritesheet("enemy-die-sprite", enemyDieSprite, {
+      frameWidth: 32,
+      frameHeight: 32,
+    });
   }
 
   create() {
     this.setupAnimations();
     this.addMap();
+    this.addEnemy();
     this.addHero();
     this.addStats();
   }
@@ -96,12 +119,37 @@ export class Start extends Phaser.Scene {
     const groundLayer = this.map.createLayer("Ground", worldTiles);
     groundLayer?.setCollision([1, 2, 4], true);
 
-    const startingPoint = this.map
+    const heroStartingPoint = this.map
       .getObjectLayer("Objects")
       ?.objects.find((o) => o.name === "StartingPoint");
 
-    if (startingPoint) {
-      this.heroStartCoordinates = { x: startingPoint.x!, y: startingPoint.y! };
+    if (heroStartingPoint) {
+      this.heroStartCoordinates = {
+        x: heroStartingPoint.x!,
+        y: heroStartingPoint.y!,
+      };
+    }
+
+    const enemyStartingPoint = this.map
+      .getObjectLayer("Objects")
+      ?.objects.find((o) => o.name === "EnemyStartingPoint");
+
+    if (enemyStartingPoint) {
+      this.enemyStartCoordinates = {
+        x: enemyStartingPoint.x!,
+        y: enemyStartingPoint.y!,
+      };
+    }
+
+    const enemyEndingPoint = this.map
+      .getObjectLayer("Objects")
+      ?.objects.find((o) => o.name === "EnemyEndingPoint");
+
+    if (enemyEndingPoint) {
+      this.enemyEndCoordinates = {
+        x: enemyEndingPoint.x!,
+        y: enemyEndingPoint.y!,
+      };
     }
 
     this.spikeGroup = this.physics.add.group({
@@ -203,10 +251,50 @@ export class Start extends Phaser.Scene {
       () => this.hero.kill()
     );
 
+    const enemyCollider = this.physics.add.overlap(
+      this.enemy,
+      this.hero,
+      () => {
+        if (this.enemy.isDead) return;
+
+        const heroCenterY = this.hero.getBounds().centerY;
+        const enemyCenterY = this.enemy.getBounds().centerY;
+        const enemyHalfHeight = this.enemy.getBounds().height / 2;
+
+        if (heroCenterY < enemyCenterY - enemyHalfHeight) {
+          this.enemy.kill();
+        } else {
+          this.hero.kill();
+        }
+      }
+    );
+
     this.hero.on("died", () => {
       groundCollider.destroy();
       spikesCollider.destroy();
+      enemyCollider.destroy();
       this.cameras.main.stopFollow();
+    });
+  }
+
+  private addEnemy() {
+    this.enemy = new Enemy(
+      this,
+      this.enemyStartCoordinates,
+      this.enemyEndCoordinates,
+      "enemy-walk-sprite",
+      0
+    );
+
+    this.enemy.anims.play("enemy-walking");
+
+    this.physics.add.collider(
+      this.enemy,
+      this.map.getLayer("Ground")?.tilemapLayer!
+    );
+
+    this.enemy.on("dead", () => {
+      this.enemy.anims.play("enemy-dead");
     });
   }
 
@@ -253,6 +341,19 @@ export class Start extends Phaser.Scene {
       key: "hero-dead",
       frames: this.anims.generateFrameNumbers("hero-dead-sprite"),
     });
+
+    this.anims.create({
+      key: "enemy-walking",
+      frames: this.anims.generateFrameNumbers("enemy-walk-sprite"),
+      frameRate: 10,
+      repeat: -1,
+    });
+
+    this.anims.create({
+      key: "enemy-dead",
+      frames: this.anims.generateFrameNumbers("enemy-die-sprite"),
+      frameRate: 10,
+    });
   }
 
   private addStats() {
@@ -268,7 +369,9 @@ export class Start extends Phaser.Scene {
     const cameraBottom = camera.getWorldPoint(0, camera.height).y;
 
     if (this.hero.isDead && this.hero.getBounds().top > cameraBottom + 100) {
+      this.enemy.destroy();
       this.hero.destroy();
+      this.addEnemy();
       this.addHero();
     }
   }
