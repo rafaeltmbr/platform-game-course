@@ -26,17 +26,11 @@ export enum AnimationState {
 }
 
 export default class Hero extends Phaser.GameObjects.Sprite {
-  private verticalMovementSM = new StateMachine(
-    VerticalMovementState.STANDING
-    //(e) => console.log("Hero.VerticalMovementSM state change", e)
-  );
+  private verticalMovementSM = new StateMachine(VerticalMovementState.STANDING);
   private horizontalMovementSM = new StateMachine(
     HorizontalMovementState.STILL
-    //(e) => console.log("Hero.HorizontalMovementSM state change", e)
   );
-  private animationSM = new StateMachine(AnimationState.IDLE, (e) =>
-    console.log("Hero.AnimationSM state change", e)
-  );
+  private animationSM = new StateMachine(AnimationState.IDLE);
 
   private cursorKeys?: Phaser.Types.Input.Keyboard.CursorKeys;
   private didPressJump: boolean = false;
@@ -66,6 +60,7 @@ export default class Hero extends Phaser.GameObjects.Sprite {
       );
     }
 
+    this.setOrigin(0.5, 1);
     this.setupPhysics(body);
     this.setupHorizontalMovement(body);
     this.setupVerticalMovement(body);
@@ -75,7 +70,7 @@ export default class Hero extends Phaser.GameObjects.Sprite {
   private setupPhysics(body: Phaser.Physics.Arcade.Body) {
     body.setCollideWorldBounds(true);
     body.setSize(15, 40);
-    body.setOffset(12, 23);
+    body.setOffset(10, 23);
     body.setMaxVelocity(250, 400);
     body.setDragX(750);
   }
@@ -90,14 +85,14 @@ export default class Hero extends Phaser.GameObjects.Sprite {
       onEnter: () => {
         body.setAccelerationX(-1000);
         this.setFlipX(true);
-        body.setOffset(5, 23);
+        body.setOffset(8, 23);
       },
     });
     this.horizontalMovementSM.addState(HorizontalMovementState.TO_RIGHT, {
       onEnter: () => {
         body.setAccelerationX(1000);
         this.setFlipX(false);
-        body.setOffset(12, 23);
+        body.setOffset(10, 23);
       },
     });
 

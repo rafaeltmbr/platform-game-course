@@ -8,6 +8,7 @@ import heroFlipSprite from "../assets/hero/spinjump.png";
 import heroFallSprite from "../assets/hero/fall.png";
 import tileMap from "../assets/tilemaps/level-1.json";
 import tileSet from "../assets/tilesets/world-1.png";
+import cloudsSet from "../assets/tilesets/clouds.png";
 
 import Hero, { AnimationState } from "../entities/Hero";
 import phaserConfig from "../phaserConfig";
@@ -16,6 +17,7 @@ export class Start extends Phaser.Scene {
   private fpsText!: Phaser.GameObjects.Text;
   private hero!: Hero;
   private map!: Phaser.Tilemaps.Tilemap;
+  private heroStartCoordinates = { x: 0, y: 0 };
 
   constructor() {
     super("Start");
@@ -23,7 +25,15 @@ export class Start extends Phaser.Scene {
 
   preload() {
     this.load.tilemapTiledJSON("level-1", tileMap);
-    this.load.image("world-1-sheet", tileSet);
+
+    this.load.spritesheet("world-1-sheet", tileSet, {
+      frameWidth: 32,
+      frameHeight: 32,
+      margin: 1,
+      spacing: 2,
+    });
+
+    this.load.image("clouds-sheet", cloudsSet);
 
     this.load.spritesheet("hero-idle-sprite", heroIdleSprite, {
       frameWidth: 32,
@@ -57,6 +67,7 @@ export class Start extends Phaser.Scene {
   }
 
   create() {
+    this.setupAnimations();
     this.addMap();
     this.addHero();
     this.addStats();
@@ -64,11 +75,43 @@ export class Start extends Phaser.Scene {
 
   private addMap() {
     this.map = this.make.tilemap({ key: "level-1" });
+    const cloudTiles = this.map.addTilesetImage("clouds", "clouds-sheet");
+    const worldTiles = this.map.addTilesetImage("world-1", "world-1-sheet");
+    if (!worldTiles || !cloudTiles) return;
 
-    const groundTiles = this.map.addTilesetImage("world-1", "world-1-sheet");
-    if (!groundTiles) return;
-    const groundLayer = this.map.createLayer("Ground", groundTiles);
+    const backgroundLayer = this.map.createLayer("Background", cloudTiles);
+    backgroundLayer?.setScrollFactor(0.5);
+
+    const groundLayer = this.map.createLayer("Ground", worldTiles);
     groundLayer?.setCollision([1, 2, 4], true);
+
+    const startingPoint = this.map
+      .getObjectLayer("Objects")
+      ?.objects.find((o) => o.name === "StartingPoint");
+
+    if (startingPoint) {
+      this.heroStartCoordinates = { x: startingPoint.x!, y: startingPoint.y! };
+    }
+
+    const spikesGroup = this.physics.add.group({
+      immovable: true,
+      allowGravity: false,
+    });
+    const spikes =
+      this.map.getObjectLayer("Objects")?.objects.filter((o) => o.gid === 7) ??
+      [];
+
+    for (const spike of spikes) {
+      const spikeObject = spikesGroup.create(
+        spike.x,
+        spike.y,
+        "world-1-sheet",
+        spike.gid! - 1
+      );
+      spikeObject.setOrigin(0, 1);
+      spikeObject.setSize(spike.width! - 4, spike.height! - 2);
+      spikeObject.setOffset(2, 2);
+    }
 
     this.physics.world.setBounds(
       0,
@@ -78,6 +121,8 @@ export class Start extends Phaser.Scene {
     );
     this.physics.world.setBoundsCollision(true, true, false, true);
 
+    this.map.createLayer("Foreground", worldTiles);
+
     if (phaserConfig.physics.arcade.debug) {
       const debugGraphics = this.add.graphics();
       groundLayer?.renderDebug(debugGraphics);
@@ -85,6 +130,52 @@ export class Start extends Phaser.Scene {
   }
 
   private addHero() {
+    const cursorKeys = this.input.keyboard?.createCursorKeys();
+
+    this.hero = new Hero(
+      this,
+      this.heroStartCoordinates.x,
+      this.heroStartCoordinates.y,
+      "hero-run-sprite",
+      0,
+      (state) => {
+        if (state === AnimationState.IDLE) {
+          this.hero.anims.play("hero-idle");
+        } else if (state === AnimationState.RUNNING) {
+          this.hero.anims.play("hero-running");
+        } else if (state === AnimationState.PIVOT) {
+          this.hero.anims.play("hero-pivoting");
+        } else if (state === AnimationState.JUMPING) {
+          this.hero.anims.play("hero-jumping");
+        } else if (state === AnimationState.FLIPPING) {
+          this.hero.anims.play("hero-flipping");
+        } else if (state === AnimationState.FALLING) {
+          this.hero.anims.play("hero-falling");
+        }
+      },
+      cursorKeys
+    );
+
+    this.cameras.main.startFollow(this.hero);
+    this.cameras.main.setBounds(
+      0,
+      -this.map.heightInPixels,
+      this.map.widthInPixels,
+      this.map.heightInPixels * 2
+    );
+
+    this.physics.add.collider(
+      this.hero,
+      this.map.getLayer("Ground")?.tilemapLayer!
+    );
+
+    this.children.moveTo(
+      this.hero,
+      this.children.getIndex(this.map.getLayer("Foreground")!.tilemapLayer)
+    );
+  }
+
+  private setupAnimations() {
     this.anims.create({
       key: "hero-idle",
       frames: this.anims.generateFrameNumbers("hero-idle-sprite"),
@@ -122,45 +213,6 @@ export class Start extends Phaser.Scene {
       frameRate: 10,
       repeat: -1,
     });
-
-    const cursorKeys = this.input.keyboard?.createCursorKeys();
-
-    this.hero = new Hero(
-      this,
-      16,
-      240,
-      "hero-run-sprite",
-      0,
-      (state) => {
-        if (state === AnimationState.IDLE) {
-          this.hero.anims.play("hero-idle");
-        } else if (state === AnimationState.RUNNING) {
-          this.hero.anims.play("hero-running");
-        } else if (state === AnimationState.PIVOT) {
-          this.hero.anims.play("hero-pivoting");
-        } else if (state === AnimationState.JUMPING) {
-          this.hero.anims.play("hero-jumping");
-        } else if (state === AnimationState.FLIPPING) {
-          this.hero.anims.play("hero-flipping");
-        } else if (state === AnimationState.FALLING) {
-          this.hero.anims.play("hero-falling");
-        }
-      },
-      cursorKeys
-    );
-
-    this.cameras.main.startFollow(this.hero);
-    this.cameras.main.setBounds(
-      0,
-      -this.map.heightInPixels,
-      this.map.widthInPixels,
-      this.map.heightInPixels * 2
-    );
-
-    this.physics.add.collider(
-      this.hero,
-      this.map.getLayer("Ground")?.tilemapLayer!
-    );
   }
 
   private addStats() {
