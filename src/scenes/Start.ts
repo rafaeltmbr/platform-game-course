@@ -14,6 +14,7 @@ import cloudsSet from "../assets/tilesets/clouds.png";
 
 import Hero, { AnimationState, type TextKeys } from "../entities/Hero";
 import phaserConfig from "../phaserConfig";
+import { controlsState } from "../components/controls";
 
 export class Start extends Phaser.Scene {
   private fpsText!: Phaser.GameObjects.Text;
@@ -174,7 +175,8 @@ export class Start extends Phaser.Scene {
         }
       },
       cursorKeys,
-      textKeys
+      textKeys,
+      controlsState
     );
 
     this.cameras.main.startFollow(this.hero);

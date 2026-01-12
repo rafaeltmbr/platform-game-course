@@ -1,6 +1,7 @@
 import Phaser from "phaser";
 
 import { StateMachine } from "../utils/StateMachine";
+import type { ControlsState } from "../components/controls";
 
 enum VerticalMovementState {
   STANDING = "STANDING",
@@ -54,7 +55,8 @@ export default class Hero extends Phaser.GameObjects.Sprite {
     frame: number,
     private onAnimationStateChange: (state: AnimationState) => void,
     private cursorKeys?: Phaser.Types.Input.Keyboard.CursorKeys,
-    private textKeys?: TextKeys
+    private textKeys?: TextKeys,
+    private controlsState?: ControlsState
   ) {
     super(scene, x, y, texture, frame);
 
@@ -130,10 +132,14 @@ export default class Hero extends Phaser.GameObjects.Sprite {
       to: HorizontalMovementState.TO_LEFT,
       condition: () => {
         const isLeftDown =
-          !!this.cursorKeys?.left.isDown || !!this.textKeys?.a.isDown;
+          !!this.cursorKeys?.left.isDown ||
+          !!this.textKeys?.a.isDown ||
+          !!this.controlsState?.isLeft;
 
         const isRightUp =
-          !!this.cursorKeys?.right.isUp && !!this.textKeys?.d.isUp;
+          !!this.cursorKeys?.right.isUp &&
+          !!this.textKeys?.d.isUp &&
+          !this.controlsState?.isRight;
 
         return isLeftDown && isRightUp;
       },
@@ -144,10 +150,14 @@ export default class Hero extends Phaser.GameObjects.Sprite {
       to: HorizontalMovementState.TO_RIGHT,
       condition: () => {
         const isRightDown =
-          !!this.cursorKeys?.right.isDown || !!this.textKeys?.d.isDown;
+          !!this.cursorKeys?.right.isDown ||
+          !!this.textKeys?.d.isDown ||
+          !!this.controlsState?.isRight;
 
         const isLeftUp =
-          !!this.cursorKeys?.left.isUp && !!this.textKeys?.a.isUp;
+          !!this.cursorKeys?.left.isUp &&
+          !!this.textKeys?.a.isUp &&
+          !this.controlsState?.isLeft;
 
         return isRightDown && isLeftUp;
       },
@@ -158,10 +168,14 @@ export default class Hero extends Phaser.GameObjects.Sprite {
       to: HorizontalMovementState.STILL,
       condition: () => {
         const isLeftUp =
-          !!this.cursorKeys?.left.isUp && !!this.textKeys?.a.isUp;
+          !!this.cursorKeys?.left.isUp &&
+          !!this.textKeys?.a.isUp &&
+          !this.controlsState?.isLeft;
 
         const isRightUp =
-          !!this.cursorKeys?.right.isUp && !!this.textKeys?.d.isUp;
+          !!this.cursorKeys?.right.isUp &&
+          !!this.textKeys?.d.isUp &&
+          !this.controlsState?.isRight;
 
         return isLeftUp && isRightUp;
       },
@@ -186,7 +200,8 @@ export default class Hero extends Phaser.GameObjects.Sprite {
         const isPressJump =
           this.cursorKeys?.up.isDown ||
           this.cursorKeys?.space.isDown ||
-          this.textKeys?.w.isDown;
+          this.textKeys?.w.isDown ||
+          this.controlsState?.isUp;
 
         if (!isPressJump && body.velocity.y < -150) {
           // Cut speed to allow short jumps after quick key release.
@@ -370,17 +385,19 @@ export default class Hero extends Phaser.GameObjects.Sprite {
   protected override preUpdate(time: number, delta: number): void {
     super.preUpdate(time, delta);
 
-    if (
-      !(this.body instanceof Phaser.Physics.Arcade.Body) ||
-      !this.cursorKeys ||
-      !this.textKeys
-    )
-      return;
+    if (!(this.body instanceof Phaser.Physics.Arcade.Body)) return;
 
-    this.didPressJump =
-      Phaser.Input.Keyboard.JustDown(this.cursorKeys.up) ||
-      Phaser.Input.Keyboard.JustDown(this.cursorKeys.space) ||
-      Phaser.Input.Keyboard.JustDown(this.textKeys.w);
+    if (this.cursorKeys && this.textKeys) {
+      this.didPressJump =
+        Phaser.Input.Keyboard.JustDown(this.cursorKeys.up) ||
+        Phaser.Input.Keyboard.JustDown(this.cursorKeys.space) ||
+        Phaser.Input.Keyboard.JustDown(this.textKeys.w);
+    }
+
+    if (this.controlsState) {
+      this.didPressJump = this.didPressJump || this.controlsState.didPressUp;
+      this.controlsState.didPressUp = false;
+    }
 
     this.isOnFloor = this.body.onFloor();
 

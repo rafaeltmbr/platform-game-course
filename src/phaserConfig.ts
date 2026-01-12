@@ -6,8 +6,8 @@ const config = {
   backgroundColor: "#33A5E7",
   scene: [Start],
   scale: {
-    width: 500,
-    height: 320,
+    width: 640,
+    height: 360,
     mode: Phaser.Scale.FIT,
     autoCenter: Phaser.Scale.CENTER_BOTH,
   },

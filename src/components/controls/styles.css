@@ -1,0 +1,74 @@
+.controls {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  padding: 1rem;
+  gap: 1rem;
+
+  z-index: 10;
+}
+
+.controls .top-container {
+  width: 100%;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.controls .top-container .button {
+  height: 5rem;
+  width: 4rem;
+  font-size: 2rem;
+  color: white;
+  border: 2px solid white;
+  border-radius: 0.5rem;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
+.controls .top-container .button:active {
+  opacity: 0.5;
+}
+
+.controls .top-container .button.right > * {
+  rotate: 90deg;
+  padding-bottom: 0.125rem;
+}
+
+.controls .top-container .button.left > * {
+  rotate: 270deg;
+  padding-bottom: 0.125rem;
+}
+
+.controls .bottom-container {
+  width: 100%;
+}
+
+.controls .bottom-container .button.up {
+  height: 4rem;
+  width: 100%; 
+  font-size: 2rem;
+  color: white;
+  border: 2px solid white;
+  border-radius: 0.5rem;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
+.controls .bottom-container .button:active {
+  opacity: 0.5;
+}
