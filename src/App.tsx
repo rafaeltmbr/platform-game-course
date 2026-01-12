@@ -9,7 +9,7 @@ let phaser: Phaser.Game;
 function App() {
   useEffect(() => {
     if (!phaser) {
-      phaser = new Phaser.Game(config);
+      phaser = new Phaser.Game(config as any);
     }
   }, []);
 

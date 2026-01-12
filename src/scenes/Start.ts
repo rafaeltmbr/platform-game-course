@@ -249,7 +249,7 @@ export class Start extends Phaser.Scene {
     this.fpsText.setScrollFactor(0, 0);
   }
 
-  update(time: number, delta: number) {
+  update(_: number, delta: number) {
     const fps = Math.round(1000 / delta);
     this.fpsText.setText(`${fps} fps`);
 
