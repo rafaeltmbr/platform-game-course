@@ -8,12 +8,14 @@ enum VerticalMovementState {
   JUMPING = "JUMPING",
   FLIPPING = "FLIPPING",
   FALLING = "FALLING",
+  DEAD = "DEAD",
 }
 
 enum HorizontalMovementState {
   STILL = "STILL",
   TO_LEFT = "TO_LEFT",
   TO_RIGHT = "TO_RIGHT",
+  DEAD = "DEAD",
 }
 
 export enum AnimationState {
@@ -23,6 +25,7 @@ export enum AnimationState {
   JUMPING = "JUMPING",
   FLIPPING = "FLIPPING",
   FALLING = "FALLING",
+  DEAD = "DEAD",
 }
 
 export default class Hero extends Phaser.GameObjects.Sprite {
@@ -35,6 +38,7 @@ export default class Hero extends Phaser.GameObjects.Sprite {
   private cursorKeys?: Phaser.Types.Input.Keyboard.CursorKeys;
   private didPressJump: boolean = false;
   private isOnFloor: boolean = false;
+  private _isDead: boolean = false;
 
   constructor(
     scene: Phaser.Scene,
@@ -67,6 +71,10 @@ export default class Hero extends Phaser.GameObjects.Sprite {
     this.setupAnimation(body);
   }
 
+  public get isDead() {
+    return this._isDead;
+  }
+
   private setupPhysics(body: Phaser.Physics.Arcade.Body) {
     body.setCollideWorldBounds(true);
     body.setSize(15, 40);
@@ -76,6 +84,12 @@ export default class Hero extends Phaser.GameObjects.Sprite {
   }
 
   private setupHorizontalMovement(body: Phaser.Physics.Arcade.Body) {
+    this.horizontalMovementSM.addState(HorizontalMovementState.DEAD, {
+      onEnter: () => {
+        body.setAccelerationX(0);
+      },
+    });
+
     this.horizontalMovementSM.addState(HorizontalMovementState.STILL, {
       onEnter: () => {
         body.setAccelerationX(0);
@@ -94,6 +108,16 @@ export default class Hero extends Phaser.GameObjects.Sprite {
         this.setFlipX(false);
         body.setOffset(10, 23);
       },
+    });
+
+    this.horizontalMovementSM.addTransitions({
+      from: [
+        HorizontalMovementState.STILL,
+        HorizontalMovementState.TO_LEFT,
+        HorizontalMovementState.TO_RIGHT,
+      ],
+      to: HorizontalMovementState.DEAD,
+      condition: () => this._isDead,
     });
 
     this.horizontalMovementSM.addTransitions({
@@ -121,10 +145,16 @@ export default class Hero extends Phaser.GameObjects.Sprite {
   }
 
   private setupVerticalMovement(body: Phaser.Physics.Arcade.Body) {
+    this.verticalMovementSM.addState(VerticalMovementState.DEAD, {
+      onEnter: () => body.setVelocityY(-500),
+    });
+
     this.verticalMovementSM.addState(VerticalMovementState.STANDING, {});
+
     this.verticalMovementSM.addState(VerticalMovementState.PRE_JUMPING, {
       onEnter: () => body.setVelocityY(-400),
     });
+
     this.verticalMovementSM.addState(VerticalMovementState.JUMPING, {
       onUpdate: () => {
         const isPressJump =
@@ -136,10 +166,24 @@ export default class Hero extends Phaser.GameObjects.Sprite {
         }
       },
     });
+
     this.verticalMovementSM.addState(VerticalMovementState.FLIPPING, {
       onEnter: () => body.setVelocityY(-300),
     });
+
     this.verticalMovementSM.addState(VerticalMovementState.FALLING, {});
+
+    this.verticalMovementSM.addTransitions({
+      from: [
+        VerticalMovementState.STANDING,
+        VerticalMovementState.PRE_JUMPING,
+        VerticalMovementState.JUMPING,
+        VerticalMovementState.FLIPPING,
+        VerticalMovementState.FALLING,
+      ],
+      to: VerticalMovementState.DEAD,
+      condition: () => this._isDead,
+    });
 
     this.verticalMovementSM.addTransition({
       from: VerticalMovementState.STANDING,
@@ -179,6 +223,10 @@ export default class Hero extends Phaser.GameObjects.Sprite {
   }
 
   private setupAnimation(body: Phaser.Physics.Arcade.Body) {
+    this.animationSM.addState(AnimationState.DEAD, {
+      onEnter: () => this.onAnimationStateChange(AnimationState.DEAD),
+    });
+
     this.animationSM.addState(AnimationState.IDLE, {
       onEnter: () => this.onAnimationStateChange(AnimationState.IDLE),
     });
@@ -201,6 +249,19 @@ export default class Hero extends Phaser.GameObjects.Sprite {
 
     this.animationSM.addState(AnimationState.FALLING, {
       onEnter: () => this.onAnimationStateChange(AnimationState.FALLING),
+    });
+
+    this.animationSM.addTransitions({
+      from: [
+        AnimationState.IDLE,
+        AnimationState.PIVOT,
+        AnimationState.RUNNING,
+        AnimationState.JUMPING,
+        AnimationState.FLIPPING,
+        AnimationState.FALLING,
+      ],
+      to: AnimationState.DEAD,
+      condition: () => this._isDead,
     });
 
     this.animationSM.addTransitions({
@@ -293,5 +354,16 @@ export default class Hero extends Phaser.GameObjects.Sprite {
     this.horizontalMovementSM.update();
     this.verticalMovementSM.update();
     this.animationSM.update();
+  }
+
+  public kill() {
+    if (!this._isDead) {
+      this._isDead = true;
+      this.emit("died");
+
+      if (this.body instanceof Phaser.Physics.Arcade.Body) {
+        this.body.setCollideWorldBounds(false);
+      }
+    }
   }
 }

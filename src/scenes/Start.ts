@@ -6,6 +6,8 @@ import heroPivotSprite from "../assets/hero/pivot.png";
 import heroJumpSprite from "../assets/hero/jump.png";
 import heroFlipSprite from "../assets/hero/spinjump.png";
 import heroFallSprite from "../assets/hero/fall.png";
+import heroDeadSprite from "../assets/hero/bonk.png";
+
 import tileMap from "../assets/tilemaps/level-1.json";
 import tileSet from "../assets/tilesets/world-1.png";
 import cloudsSet from "../assets/tilesets/clouds.png";
@@ -17,6 +19,7 @@ export class Start extends Phaser.Scene {
   private fpsText!: Phaser.GameObjects.Text;
   private hero!: Hero;
   private map!: Phaser.Tilemaps.Tilemap;
+  private spikeGroup!: Phaser.Physics.Arcade.Group;
   private heroStartCoordinates = { x: 0, y: 0 };
 
   constructor() {
@@ -64,6 +67,11 @@ export class Start extends Phaser.Scene {
       frameWidth: 32,
       frameHeight: 64,
     });
+
+    this.load.spritesheet("hero-dead-sprite", heroDeadSprite, {
+      frameWidth: 32,
+      frameHeight: 64,
+    });
   }
 
   create() {
@@ -77,7 +85,9 @@ export class Start extends Phaser.Scene {
     this.map = this.make.tilemap({ key: "level-1" });
     const cloudTiles = this.map.addTilesetImage("clouds", "clouds-sheet");
     const worldTiles = this.map.addTilesetImage("world-1", "world-1-sheet");
-    if (!worldTiles || !cloudTiles) return;
+    if (!worldTiles || !cloudTiles) {
+      throw new Error("Tiles not loaded.");
+    }
 
     const backgroundLayer = this.map.createLayer("Background", cloudTiles);
     backgroundLayer?.setScrollFactor(0.5);
@@ -93,7 +103,7 @@ export class Start extends Phaser.Scene {
       this.heroStartCoordinates = { x: startingPoint.x!, y: startingPoint.y! };
     }
 
-    const spikesGroup = this.physics.add.group({
+    this.spikeGroup = this.physics.add.group({
       immovable: true,
       allowGravity: false,
     });
@@ -102,15 +112,15 @@ export class Start extends Phaser.Scene {
       [];
 
     for (const spike of spikes) {
-      const spikeObject = spikesGroup.create(
+      const spikeObject = this.spikeGroup.create(
         spike.x,
         spike.y,
         "world-1-sheet",
         spike.gid! - 1
       );
       spikeObject.setOrigin(0, 1);
-      spikeObject.setSize(spike.width! - 4, spike.height! - 2);
-      spikeObject.setOffset(2, 2);
+      spikeObject.setSize(spike.width! - 6, spike.height! - 8);
+      spikeObject.setOffset(3, 8);
     }
 
     this.physics.world.setBounds(
@@ -151,6 +161,8 @@ export class Start extends Phaser.Scene {
           this.hero.anims.play("hero-flipping");
         } else if (state === AnimationState.FALLING) {
           this.hero.anims.play("hero-falling");
+        } else if (state == AnimationState.DEAD) {
+          this.hero.anims.play("hero-dead");
         }
       },
       cursorKeys
@@ -164,7 +176,7 @@ export class Start extends Phaser.Scene {
       this.map.heightInPixels * 2
     );
 
-    this.physics.add.collider(
+    const groundCollider = this.physics.add.collider(
       this.hero,
       this.map.getLayer("Ground")?.tilemapLayer!
     );
@@ -173,6 +185,18 @@ export class Start extends Phaser.Scene {
       this.hero,
       this.children.getIndex(this.map.getLayer("Foreground")!.tilemapLayer)
     );
+
+    const spikesCollider = this.physics.add.overlap(
+      this.hero,
+      this.spikeGroup,
+      () => this.hero.kill()
+    );
+
+    this.hero.on("died", () => {
+      groundCollider.destroy();
+      spikesCollider.destroy();
+      this.cameras.main.stopFollow();
+    });
   }
 
   private setupAnimations() {
@@ -213,6 +237,11 @@ export class Start extends Phaser.Scene {
       frameRate: 10,
       repeat: -1,
     });
+
+    this.anims.create({
+      key: "hero-dead",
+      frames: this.anims.generateFrameNumbers("hero-dead-sprite"),
+    });
   }
 
   private addStats() {
@@ -223,5 +252,13 @@ export class Start extends Phaser.Scene {
   update(time: number, delta: number) {
     const fps = Math.round(1000 / delta);
     this.fpsText.setText(`${fps} fps`);
+
+    const camera = this.cameras.main;
+    const cameraBottom = camera.getWorldPoint(0, camera.height).y;
+
+    if (this.hero.isDead && this.hero.getBounds().top > cameraBottom + 100) {
+      this.hero.destroy();
+      this.addHero();
+    }
   }
 }
