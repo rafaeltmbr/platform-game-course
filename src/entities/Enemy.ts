@@ -100,7 +100,7 @@ export default class Enemy extends Phaser.GameObjects.Sprite {
   public kill() {
     if (!this._isDead) {
       this._isDead = true;
-      this.emit("dead");
+      this.emit("died");
     }
   }
 

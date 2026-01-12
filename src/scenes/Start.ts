@@ -15,6 +15,12 @@ import tileMap from "../assets/tilemaps/level-1.json";
 import tileSet from "../assets/tilesets/world-1.png";
 import cloudsSet from "../assets/tilesets/clouds.png";
 
+import themeSoundFile from "../assets/music/time_for_adventure.mp3";
+import jumpSoundFile from "../assets/sounds/jump.wav";
+import pivotSoundFile from "../assets/sounds/tap.wav";
+import heroDieSoundFile from "../assets/sounds/power_up.wav";
+import enemyDieSoundFile from "../assets/sounds/explosion.wav";
+
 import Hero, { AnimationState, type TextKeys } from "../entities/Hero";
 import phaserConfig from "../phaserConfig";
 import { controlsState } from "../components/controls";
@@ -34,12 +40,25 @@ export class Start extends Phaser.Scene {
   private heroStartCoordinates: Coordinates = { x: 0, y: 0 };
   private enemyStartCoordinates: Coordinates = { x: 0, y: 0 };
   private enemyEndCoordinates: Coordinates = { x: 0, y: 0 };
+  private themeSound!: Phaser.Sound.WebAudioSound;
+  private jumpSound!: Phaser.Sound.WebAudioSound;
+  private pivotSound!: Phaser.Sound.WebAudioSound;
+  private heroDieSound!: Phaser.Sound.WebAudioSound;
+  private enemyDieSound!: Phaser.Sound.WebAudioSound;
 
   constructor() {
     super("Start");
   }
 
   preload() {
+    this.load.audio("theme", themeSoundFile);
+    this.load.audio("jump", jumpSoundFile);
+    this.load.audio("pivot", pivotSoundFile);
+    this.load.audio("hero-die", heroDieSoundFile);
+    this.load.audio("enemy-die", enemyDieSoundFile);
+
+    this.sound.pauseOnBlur = true;
+
     this.load.tilemapTiledJSON("level-1", tileMap);
 
     this.load.spritesheet("world-1-sheet", tileSet, {
@@ -98,11 +117,89 @@ export class Start extends Phaser.Scene {
   }
 
   create() {
+    this.setupAudio();
     this.setupAnimations();
     this.addMap();
     this.addEnemy();
     this.addHero();
     this.addStats();
+  }
+
+  private setupAudio() {
+    this.themeSound = this.sound.add("theme", {
+      volume: 0.4,
+      loop: true,
+    }) as Phaser.Sound.WebAudioSound;
+    this.jumpSound = this.sound.add("jump", {
+      volume: 0.15,
+    }) as Phaser.Sound.WebAudioSound;
+    this.pivotSound = this.sound.add("pivot", {
+      volume: 0.1,
+    }) as Phaser.Sound.WebAudioSound;
+    this.heroDieSound = this.sound.add("hero-die", {
+      volume: 0.2,
+    }) as Phaser.Sound.WebAudioSound;
+    this.enemyDieSound = this.sound.add("enemy-die", {
+      volume: 0.15,
+    }) as Phaser.Sound.WebAudioSound;
+  }
+
+  private setupAnimations() {
+    this.anims.create({
+      key: "hero-idle",
+      frames: this.anims.generateFrameNumbers("hero-idle-sprite"),
+    });
+
+    this.anims.create({
+      key: "hero-running",
+      frames: this.anims.generateFrameNumbers("hero-run-sprite"),
+      frameRate: 10,
+      repeat: -1,
+    });
+
+    this.anims.create({
+      key: "hero-pivoting",
+      frames: this.anims.generateFrameNumbers("hero-pivot-sprite"),
+    });
+
+    this.anims.create({
+      key: "hero-jumping",
+      frames: this.anims.generateFrameNumbers("hero-jump-sprite"),
+      frameRate: 10,
+      repeat: -1,
+    });
+
+    this.anims.create({
+      key: "hero-flipping",
+      frames: this.anims.generateFrameNumbers("hero-flip-sprite"),
+      frameRate: 30,
+      repeat: -1,
+    });
+
+    this.anims.create({
+      key: "hero-falling",
+      frames: this.anims.generateFrameNumbers("hero-fall-sprite"),
+      frameRate: 10,
+      repeat: -1,
+    });
+
+    this.anims.create({
+      key: "hero-dead",
+      frames: this.anims.generateFrameNumbers("hero-dead-sprite"),
+    });
+
+    this.anims.create({
+      key: "enemy-walking",
+      frames: this.anims.generateFrameNumbers("enemy-walk-sprite"),
+      frameRate: 10,
+      repeat: -1,
+    });
+
+    this.anims.create({
+      key: "enemy-dead",
+      frames: this.anims.generateFrameNumbers("enemy-die-sprite"),
+      frameRate: 10,
+    });
   }
 
   private addMap() {
@@ -212,14 +309,22 @@ export class Start extends Phaser.Scene {
           this.hero.anims.play("hero-running");
         } else if (state === AnimationState.PIVOT) {
           this.hero.anims.play("hero-pivoting");
+          this.pivotSound.play();
         } else if (state === AnimationState.JUMPING) {
           this.hero.anims.play("hero-jumping");
+          this.jumpSound.play();
         } else if (state === AnimationState.FLIPPING) {
           this.hero.anims.play("hero-flipping");
+          this.jumpSound.play();
         } else if (state === AnimationState.FALLING) {
           this.hero.anims.play("hero-falling");
         } else if (state == AnimationState.DEAD) {
           this.hero.anims.play("hero-dead");
+          this.heroDieSound.play();
+        }
+
+        if (!this.themeSound.isPlaying) {
+          this.themeSound.play();
         }
       },
       cursorKeys,
@@ -293,66 +398,9 @@ export class Start extends Phaser.Scene {
       this.map.getLayer("Ground")?.tilemapLayer!
     );
 
-    this.enemy.on("dead", () => {
+    this.enemy.on("died", () => {
       this.enemy.anims.play("enemy-dead");
-    });
-  }
-
-  private setupAnimations() {
-    this.anims.create({
-      key: "hero-idle",
-      frames: this.anims.generateFrameNumbers("hero-idle-sprite"),
-    });
-
-    this.anims.create({
-      key: "hero-running",
-      frames: this.anims.generateFrameNumbers("hero-run-sprite"),
-      frameRate: 10,
-      repeat: -1,
-    });
-
-    this.anims.create({
-      key: "hero-pivoting",
-      frames: this.anims.generateFrameNumbers("hero-pivot-sprite"),
-    });
-
-    this.anims.create({
-      key: "hero-jumping",
-      frames: this.anims.generateFrameNumbers("hero-jump-sprite"),
-      frameRate: 10,
-      repeat: -1,
-    });
-
-    this.anims.create({
-      key: "hero-flipping",
-      frames: this.anims.generateFrameNumbers("hero-flip-sprite"),
-      frameRate: 30,
-      repeat: -1,
-    });
-
-    this.anims.create({
-      key: "hero-falling",
-      frames: this.anims.generateFrameNumbers("hero-fall-sprite"),
-      frameRate: 10,
-      repeat: -1,
-    });
-
-    this.anims.create({
-      key: "hero-dead",
-      frames: this.anims.generateFrameNumbers("hero-dead-sprite"),
-    });
-
-    this.anims.create({
-      key: "enemy-walking",
-      frames: this.anims.generateFrameNumbers("enemy-walk-sprite"),
-      frameRate: 10,
-      repeat: -1,
-    });
-
-    this.anims.create({
-      key: "enemy-dead",
-      frames: this.anims.generateFrameNumbers("enemy-die-sprite"),
-      frameRate: 10,
+      this.enemyDieSound.play();
     });
   }
 
