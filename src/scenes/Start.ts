@@ -12,7 +12,7 @@ import tileMap from "../assets/tilemaps/level-1.json";
 import tileSet from "../assets/tilesets/world-1.png";
 import cloudsSet from "../assets/tilesets/clouds.png";
 
-import Hero, { AnimationState } from "../entities/Hero";
+import Hero, { AnimationState, type TextKeys } from "../entities/Hero";
 import phaserConfig from "../phaserConfig";
 
 export class Start extends Phaser.Scene {
@@ -141,6 +141,14 @@ export class Start extends Phaser.Scene {
 
   private addHero() {
     const cursorKeys = this.input.keyboard?.createCursorKeys();
+    const textKeys: TextKeys | undefined = this.input.keyboard
+      ? {
+          a: this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.A),
+          s: this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.S),
+          d: this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.D),
+          w: this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.W),
+        }
+      : undefined;
 
     this.hero = new Hero(
       this,
@@ -165,7 +173,8 @@ export class Start extends Phaser.Scene {
           this.hero.anims.play("hero-dead");
         }
       },
-      cursorKeys
+      cursorKeys,
+      textKeys
     );
 
     this.cameras.main.startFollow(this.hero);
