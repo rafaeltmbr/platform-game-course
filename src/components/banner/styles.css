@@ -1,0 +1,50 @@
+.banner {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+
+  z-index: 100;
+  border: 2px solid tomato;
+}
+
+.banner .content-wrapper {
+  margin: auto;
+  background-color: white;
+  overflow: hidden;
+  padding: 1rem;
+  border: 4px solid #111;
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.banner .content-wrapper .title {
+  font-size: 2rem;
+  color: #222;
+}
+
+.banner .content-wrapper .description {
+  font-size: 1rem;
+  color: #444;
+  margin: 1rem 0;
+}
+
+.banner .content-wrapper .image {
+  max-height: 300px;
+  margin-top: 0.5rem;
+}
+
+.banner .content-wrapper .button {
+  background-color: lightblue;
+  color: #111;
+  font-weight: 600;
+  border: 2px solid rgb(106, 165, 208);
+  border-radius: 0;
+}
