@@ -31,6 +31,7 @@ import { controlsState } from "../components/controls";
 import Enemy from "../entities/Enemy";
 import { Key } from "../entities/Key";
 import { Door } from "../entities/Door";
+import { GameStats } from "../valueObjects/GameStats";
 
 interface Coordinates {
   x: number;
@@ -43,7 +44,6 @@ interface StartEndCoordinates {
 }
 
 export class Start extends Phaser.Scene {
-  private fpsText!: Phaser.GameObjects.Text;
   private hero!: Hero;
   private enemies: Enemy[] = [];
   private key!: Key;
@@ -60,11 +60,14 @@ export class Start extends Phaser.Scene {
   private getKeySound!: Phaser.Sound.WebAudioSound;
   private heroDieSound!: Phaser.Sound.WebAudioSound;
   private enemyDieSound!: Phaser.Sound.WebAudioSound;
-  private gotKey: boolean = false;
-  private isGameFinished: boolean = false;
+  private gameStats = new GameStats(0, false, false);
 
   constructor() {
     super("Start");
+
+    this.gameStats.addEventListener((stats) =>
+      this.game.events.emit("game-stats", stats)
+    );
   }
 
   preload() {
@@ -152,7 +155,6 @@ export class Start extends Phaser.Scene {
     this.addEnemies();
     this.addKey();
     this.addHero();
-    this.addStats();
   }
 
   private setupAudio() {
@@ -361,7 +363,6 @@ export class Start extends Phaser.Scene {
   }
 
   private addDoor() {
-    this.gotKey = false;
     this.door = new Door(this, this.doorCoordinates, "door-sheet", 0);
 
     this.physics.add.collider(
@@ -397,7 +398,7 @@ export class Start extends Phaser.Scene {
   }
 
   private addKey() {
-    this.gotKey = false;
+    this.gameStats.heroHasKey = false;
     this.key = new Key(this, this.keyCoordinates, "key-sprite", 0);
 
     this.key.anims.play("key-rotating");
@@ -445,7 +446,7 @@ export class Start extends Phaser.Scene {
           this.heroDieSound.play();
         }
 
-        if (!this.adventureTheme.isPlaying && !this.isGameFinished) {
+        if (!this.adventureTheme.isPlaying && !this.gameStats.isFinished) {
           this.adventureTheme.play();
         }
       },
@@ -490,23 +491,21 @@ export class Start extends Phaser.Scene {
     );
 
     const doorCollider = this.physics.add.overlap(this.hero, this.door, () => {
-      if (this.gotKey && !this.isGameFinished) {
+      if (this.gameStats.heroHasKey && !this.gameStats.isFinished) {
         doorCollider.active = false;
         this.hero.visible = false;
         this.hero.active = false;
-        this.hero.active = false;
         this.cameras.main.stopFollow();
-        this.game.events.emit("finished");
         this.adventureTheme.stop();
         this.winnerTheme.play();
-        this.isGameFinished = true;
+        this.gameStats.isFinished = true;
       }
     });
 
     this.game.events.on("reset", this.reset.bind(this));
 
     const keyCollider = this.physics.add.overlap(this.hero, this.key, () => {
-      this.gotKey = true;
+      this.gameStats.heroHasKey = true;
       this.getKeySound.play();
       this.key.visible = false;
       keyCollider.active = false;
@@ -519,25 +518,19 @@ export class Start extends Phaser.Scene {
       doorCollider.destroy();
       keyCollider.destroy();
       this.adventureTheme.stop();
-      this.isGameFinished = true;
       this.cameras.main.stopFollow();
     });
   }
 
-  private addStats() {
-    this.fpsText = this.add.text(0, 0, "", { color: "#ffffff", fontSize: 12 });
-    this.fpsText.setScrollFactor(0, 0);
-  }
-
   update(_: number, delta: number) {
-    const fps = Math.round(1000 / delta);
-    this.fpsText.setText(`${fps} fps`);
-
     const camera = this.cameras.main;
     const cameraBottom = camera.getWorldPoint(0, camera.height).y;
     if (this.hero.isDead && this.hero.getBounds().top > cameraBottom + 100) {
       this.reset();
     }
+
+    const fps = Math.round(1000 / delta);
+    this.gameStats.fps = fps;
   }
 
   private reset() {
@@ -547,7 +540,9 @@ export class Start extends Phaser.Scene {
     this.addKey();
     this.addEnemies();
     this.addHero();
-    this.isGameFinished = false;
+
+    this.gameStats.isFinished = false;
+
     if (this.winnerTheme.isPlaying) {
       this.winnerTheme.stop();
     }

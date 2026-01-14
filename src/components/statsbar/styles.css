@@ -1,0 +1,27 @@
+.statsbar {
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: 0;
+  
+  z-index: 10;
+  padding: 1rem;
+
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.5rem;
+}
+
+.statsbar .row {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: flex-start;
+}
+
+.statsbar .row .fps {
+  color: white;
+  font-size: 24px;
+  text-shadow: black 0 0 1rem;
+}
