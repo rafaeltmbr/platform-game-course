@@ -31,7 +31,7 @@ import { controlsState } from "../components/controls";
 import Enemy from "../entities/Enemy";
 import { Key } from "../entities/Key";
 import { Door } from "../entities/Door";
-import { GameStats } from "../valueObjects/GameStats";
+import { GameStats, GameStatus } from "../valueObjects/GameStats";
 
 interface Coordinates {
   x: number;
@@ -60,8 +60,8 @@ export class Start extends Phaser.Scene {
   private getKeySound!: Phaser.Sound.WebAudioSound;
   private heroDieSound!: Phaser.Sound.WebAudioSound;
   private enemyDieSound!: Phaser.Sound.WebAudioSound;
-  private gameStats = new GameStats(0, 0, false, false);
-  private startTime!: Date;
+  private gameStats = new GameStats(GameStatus.PAUSED, false, 0, 0);
+  private startTime = new Date();
 
   constructor() {
     super("Start");
@@ -374,7 +374,7 @@ export class Start extends Phaser.Scene {
   }
 
   private addEnemies() {
-    for (const coordinate of this.enemiesCoordinates) {
+    this.enemies = this.enemiesCoordinates.map((coordinate) => {
       const enemy = new Enemy(
         this,
         coordinate.start,
@@ -382,8 +382,6 @@ export class Start extends Phaser.Scene {
         "enemy-walk-sprite",
         0
       );
-
-      enemy.anims.play("enemy-walking");
 
       this.physics.add.collider(
         enemy,
@@ -395,8 +393,8 @@ export class Start extends Phaser.Scene {
         this.enemyDieSound.play();
       });
 
-      this.enemies.push(enemy);
-    }
+      return enemy;
+    });
   }
 
   private addKey() {
@@ -448,8 +446,21 @@ export class Start extends Phaser.Scene {
           this.heroDieSound.play();
         }
 
-        if (!this.adventureTheme.isPlaying && !this.gameStats.isFinished) {
+        const startMovementAnimations = [
+          AnimationState.RUNNING,
+          AnimationState.JUMPING,
+        ];
+        if (
+          this.gameStats.status === GameStatus.PAUSED &&
+          startMovementAnimations.includes(state)
+        ) {
+          this.gameStats.status = GameStatus.RUNNING;
+          this.startTime = new Date();
           this.adventureTheme.play();
+          this.enemies.map((e) => {
+            e.anims.play("enemy-walking");
+            e.run();
+          });
         }
       },
       cursorKeys,
@@ -493,14 +504,17 @@ export class Start extends Phaser.Scene {
     );
 
     const doorCollider = this.physics.add.overlap(this.hero, this.door, () => {
-      if (this.gameStats.heroHasKey && !this.gameStats.isFinished) {
+      if (
+        this.gameStats.heroHasKey &&
+        this.gameStats.status !== GameStatus.FINNISHED
+      ) {
         doorCollider.active = false;
         this.hero.visible = false;
         this.hero.active = false;
         this.cameras.main.stopFollow();
         this.adventureTheme.stop();
         this.winnerTheme.play();
-        this.gameStats.isFinished = true;
+        this.gameStats.status = GameStatus.FINNISHED;
       }
     });
 
@@ -519,6 +533,7 @@ export class Start extends Phaser.Scene {
       enemyColliders.forEach((collider) => collider.destroy());
       doorCollider.destroy();
       keyCollider.destroy();
+      this.gameStats.status = GameStatus.HERO_DEAD;
       this.adventureTheme.stop();
       this.cameras.main.stopFollow();
     });
@@ -534,8 +549,8 @@ export class Start extends Phaser.Scene {
     const fps = Math.round(1000 / delta);
     this.gameStats.fps = fps;
 
-    if (!this.gameStats.isFinished) {
-      this.gameStats.elapsedTime = Date.now() - this.startTime.getTime();
+    if (this.gameStats.status === GameStatus.RUNNING) {
+      this.gameStats.elapsedTimeMs = Date.now() - this.startTime.getTime();
     }
   }
 
@@ -547,9 +562,8 @@ export class Start extends Phaser.Scene {
     this.addEnemies();
     this.addHero();
 
-    this.gameStats.isFinished = false;
-    this.gameStats.elapsedTime = 0;
-    this.startTime = new Date();
+    this.gameStats.status = GameStatus.PAUSED;
+    this.gameStats.elapsedTimeMs = 0;
 
     if (this.winnerTheme.isPlaying) {
       this.winnerTheme.stop();

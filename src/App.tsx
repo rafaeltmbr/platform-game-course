@@ -7,8 +7,10 @@ import "./App.css";
 import { Controls } from "./components/controls";
 import { Banner } from "./components/banner";
 
-import bannerImageUrl from "./assets/images/wins.gif";
-import type { GameStatsUpdate } from "./valueObjects/GameStats";
+import finnishedGameImage from "./assets/images/wins.gif";
+import pausedGameImage from "./assets/images/controls.png";
+
+import { GameStatus, type GameStatsUpdate } from "./valueObjects/GameStats";
 import { StatsBar } from "./components/statsbar";
 
 let phaser: Phaser.Game;
@@ -16,10 +18,10 @@ let phaser: Phaser.Game;
 function App() {
   const [isTouch, setIsTouch] = useState(false);
   const [gameStats, setGameStats] = useState<GameStatsUpdate>({
-    elapsedTime: 0,
-    fps: 0,
-    isFinished: false,
+    status: GameStatus.PAUSED,
     heroHasKey: false,
+    elapsedTimeMs: 0,
+    fps: 0,
   });
 
   useEffect(() => {
@@ -36,22 +38,29 @@ function App() {
     phaser?.events.emit("reset");
   };
 
-  const time = (gameStats.elapsedTime / 1000).toFixed(2);
+  const time = (gameStats.elapsedTimeMs / 1000).toFixed(2);
 
   return (
     <>
       <div id="game-container" />
       <StatsBar
-        elapsedTime={gameStats.elapsedTime}
+        elapsedTime={gameStats.elapsedTimeMs}
         fps={gameStats.fps}
         heroHasKey={gameStats.heroHasKey}
       />
       {isTouch ? <Controls /> : null}
-      {gameStats.isFinished && (
+      {gameStats.status === GameStatus.PAUSED && (
+        <Banner
+          title="GAME PAUSED"
+          description="Press any movement key to start the game."
+          imageUrl={pausedGameImage}
+        />
+      )}
+      {gameStats.status === GameStatus.FINNISHED && (
         <Banner
           title="Congratulations"
           description={`Game completed in ${time} s.`}
-          imageUrl={bannerImageUrl}
+          imageUrl={finnishedGameImage}
           onClose={handleBannerClose}
         />
       )}

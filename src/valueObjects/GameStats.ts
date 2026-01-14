@@ -1,37 +1,70 @@
+export enum GameStatus {
+  PAUSED = "PAUSED",
+  RUNNING = "RUNNING",
+  FINNISHED = "FINNISHED",
+  HERO_DEAD = "HERO_DEAD",
+}
+
 export interface GameStatsUpdate {
-  fps: number;
-  isFinished: boolean;
+  status: GameStatus;
   heroHasKey: boolean;
-  elapsedTime: number;
+  elapsedTimeMs: number;
+  fps: number;
 }
 
 export type GameStatsEventListener = (stats: Readonly<GameStatsUpdate>) => void;
 
 export class GameStats {
+  private _status = GameStatus.PAUSED;
+  private _heroHasKey = false;
   private _elapsedTimeMs = 0;
   private _fps = 0;
-  private _isFinished = false;
-  private _heroHasKey = false;
 
   private _events = new Phaser.Events.EventEmitter();
 
   constructor(
-    fps: number,
-    elapsedTime: number,
-    isFinished: boolean,
-    heroHasKey: boolean
+    status: GameStatus,
+    heroHasKey: boolean,
+    elapsedTimeMs: number,
+    fps: number
   ) {
-    this.elapsedTime = elapsedTime;
-    this.fps = fps;
-    this.isFinished = isFinished;
+    this.status = status;
     this.heroHasKey = heroHasKey;
+    this.elapsedTimeMs = elapsedTimeMs;
+    this.fps = fps;
   }
 
-  get elapsedTime(): number {
+  get status(): GameStatus {
+    return this._status;
+  }
+
+  set status(value: GameStatus) {
+    if (this._status === value) return;
+
+    this._status = value;
+    this.dispatchUpdate();
+  }
+
+  get heroHasKey(): boolean {
+    return this._heroHasKey;
+  }
+
+  set heroHasKey(value: boolean) {
+    if (typeof this._heroHasKey !== "boolean") {
+      throw new Error("heroHasKey must be a boolean.");
+    }
+
+    if (this._heroHasKey === value) return;
+
+    this._heroHasKey = value;
+    this.dispatchUpdate();
+  }
+
+  get elapsedTimeMs(): number {
     return this._elapsedTimeMs;
   }
 
-  set elapsedTime(value: number) {
+  set elapsedTimeMs(value: number) {
     if (this._elapsedTimeMs === value) return;
 
     if (!Number.isInteger(value) || value < 0) {
@@ -57,45 +90,15 @@ export class GameStats {
     this.dispatchUpdate();
   }
 
-  get isFinished(): boolean {
-    return this._isFinished;
-  }
-
-  set isFinished(value: boolean) {
-    if (typeof this._isFinished !== "boolean") {
-      throw new Error("isFinished must be a boolean.");
-    }
-
-    if (this._isFinished === value) return;
-
-    this._isFinished = value;
-    this.dispatchUpdate();
-  }
-
-  get heroHasKey(): boolean {
-    return this._heroHasKey;
-  }
-
-  set heroHasKey(value: boolean) {
-    if (typeof this._heroHasKey !== "boolean") {
-      throw new Error("heroHasKey must be a boolean.");
-    }
-
-    if (this._heroHasKey === value) return;
-
-    this._heroHasKey = value;
-    this.dispatchUpdate();
-  }
-
   private dispatchUpdate() {
     this._events.emit(
       "update",
       Object.freeze({
+        status: this._status,
+        heroHasKey: this._heroHasKey,
+        elapsedTimeMs: this._elapsedTimeMs,
         fps: this._fps,
-        isFinished: this.isFinished,
-        heroHasKey: this.heroHasKey,
-        elapsedTime: this.elapsedTime,
-      })
+      } as GameStatsUpdate)
     );
   }
 

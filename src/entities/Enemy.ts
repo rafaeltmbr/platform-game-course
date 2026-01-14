@@ -3,6 +3,7 @@ import Phaser from "phaser";
 import { StateMachine } from "../utils/StateMachine";
 
 export enum EnemyMovement {
+  IDLE = "IDLE",
   DEAD = "DEAD",
   TO_LEFT = "TO_LEFT",
   TO_RIGHT = "TO_RIGHT",
@@ -14,8 +15,9 @@ interface Coordinates {
 }
 
 export default class Enemy extends Phaser.GameObjects.Sprite {
-  private movementSM = new StateMachine(EnemyMovement.TO_RIGHT);
+  private movementSM = new StateMachine(EnemyMovement.IDLE);
   private _isDead: boolean = false;
+  private isPaused: boolean = true;
 
   constructor(
     scene: Phaser.Scene,
@@ -43,11 +45,21 @@ export default class Enemy extends Phaser.GameObjects.Sprite {
     this.setupMovement(this.body);
   }
 
-  public get isDead(): boolean {
+  get isDead(): boolean {
     return this._isDead;
   }
 
+  run() {
+    this.isPaused = false;
+  }
+
   private setupMovement(body: Phaser.Physics.Arcade.Body) {
+    this.movementSM.addState(EnemyMovement.IDLE, {
+      onEnter: () => {
+        body.setVelocityX(0);
+      },
+    });
+
     this.movementSM.addState(EnemyMovement.DEAD, {
       onEnter: () => {
         body.setVelocityX(0);
@@ -70,6 +82,18 @@ export default class Enemy extends Phaser.GameObjects.Sprite {
       onUpdate: () => {
         body.setVelocityX(-50);
       },
+    });
+
+    this.movementSM.addTransitions({
+      from: [EnemyMovement.TO_LEFT, EnemyMovement.TO_RIGHT],
+      to: EnemyMovement.IDLE,
+      condition: () => this.isPaused,
+    });
+
+    this.movementSM.addTransition({
+      from: EnemyMovement.IDLE,
+      to: EnemyMovement.TO_RIGHT,
+      condition: () => !this.isPaused,
     });
 
     this.movementSM.addTransitions({
