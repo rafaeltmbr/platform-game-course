@@ -478,7 +478,7 @@ export class Start extends Phaser.Scene {
     );
 
     const doorCollider = this.physics.add.overlap(this.hero, this.door, () => {
-      if (this.gotKey) {
+      if (this.gotKey && !this.isGameFinished) {
         doorCollider.active = false;
         this.hero.visible = false;
         this.hero.active = false;
