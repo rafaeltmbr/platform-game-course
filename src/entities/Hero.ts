@@ -362,9 +362,16 @@ export default class Hero extends Phaser.GameObjects.Sprite {
       VerticalMovementState.PRE_JUMPING,
     ];
     this.animationSM.addTransitions({
-      from: [AnimationState.IDLE, AnimationState.RUNNING, AnimationState.PIVOT],
+      from: [
+        AnimationState.IDLE,
+        AnimationState.RUNNING,
+        AnimationState.PIVOT,
+        AnimationState.FALLING,
+      ],
       to: AnimationState.JUMPING,
-      condition: () => jumpingStates.includes(this.verticalMovementSM.state),
+      condition: () =>
+        jumpingStates.includes(this.verticalMovementSM.state) &&
+        body.velocity.y < 0,
     });
 
     this.animationSM.addTransition({
