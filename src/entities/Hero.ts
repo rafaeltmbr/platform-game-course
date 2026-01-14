@@ -89,7 +89,7 @@ export default class Hero extends Phaser.GameObjects.Sprite {
 
   private setupPhysics(body: Phaser.Physics.Arcade.Body) {
     body.setCollideWorldBounds(true);
-    body.setSize(12, 40);
+    body.setSize(15, 40);
     body.setOffset(10, 23);
     body.setMaxVelocity(250, 400);
     body.setDragX(750);
@@ -111,7 +111,7 @@ export default class Hero extends Phaser.GameObjects.Sprite {
       onEnter: () => {
         body.setAccelerationX(-1000);
         this.setFlipX(true);
-        body.setOffset(10, 23);
+        body.setOffset(8, 23);
       },
     });
     this.horizontalMovementSM.addState(HorizontalMovementState.TO_RIGHT, {
