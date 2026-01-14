@@ -10,7 +10,6 @@
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  gap: 0.5rem;
 }
 
 .statsbar .row {
@@ -20,7 +19,7 @@
   justify-content: flex-start;
 }
 
-.statsbar .row .fps {
+.statsbar .row .text {
   color: white;
   font-size: 24px;
   text-shadow: black 0 0 1rem;

@@ -60,7 +60,8 @@ export class Start extends Phaser.Scene {
   private getKeySound!: Phaser.Sound.WebAudioSound;
   private heroDieSound!: Phaser.Sound.WebAudioSound;
   private enemyDieSound!: Phaser.Sound.WebAudioSound;
-  private gameStats = new GameStats(0, false, false);
+  private gameStats = new GameStats(0, 0, false, false);
+  private startTime!: Date;
 
   constructor() {
     super("Start");
@@ -155,6 +156,7 @@ export class Start extends Phaser.Scene {
     this.addEnemies();
     this.addKey();
     this.addHero();
+    this.startTime = new Date();
   }
 
   private setupAudio() {
@@ -531,6 +533,10 @@ export class Start extends Phaser.Scene {
 
     const fps = Math.round(1000 / delta);
     this.gameStats.fps = fps;
+
+    if (!this.gameStats.isFinished) {
+      this.gameStats.elapsedTime = Date.now() - this.startTime.getTime();
+    }
   }
 
   private reset() {
@@ -542,6 +548,8 @@ export class Start extends Phaser.Scene {
     this.addHero();
 
     this.gameStats.isFinished = false;
+    this.gameStats.elapsedTime = 0;
+    this.startTime = new Date();
 
     if (this.winnerTheme.isPlaying) {
       this.winnerTheme.stop();

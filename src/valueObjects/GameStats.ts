@@ -2,21 +2,44 @@ export interface GameStatsUpdate {
   fps: number;
   isFinished: boolean;
   heroHasKey: boolean;
+  elapsedTime: number;
 }
 
 export type GameStatsEventListener = (stats: Readonly<GameStatsUpdate>) => void;
 
 export class GameStats {
+  private _elapsedTimeMs = 0;
   private _fps = 0;
   private _isFinished = false;
   private _heroHasKey = false;
 
   private _events = new Phaser.Events.EventEmitter();
 
-  constructor(fps: number, isFinished: boolean, heroHasKey: boolean) {
+  constructor(
+    fps: number,
+    elapsedTime: number,
+    isFinished: boolean,
+    heroHasKey: boolean
+  ) {
+    this.elapsedTime = elapsedTime;
     this.fps = fps;
     this.isFinished = isFinished;
     this.heroHasKey = heroHasKey;
+  }
+
+  get elapsedTime(): number {
+    return this._elapsedTimeMs;
+  }
+
+  set elapsedTime(value: number) {
+    if (this._elapsedTimeMs === value) return;
+
+    if (!Number.isInteger(value) || value < 0) {
+      throw new Error("Elapsed time (ms) should be a positive number.");
+    }
+
+    this._elapsedTimeMs = value;
+    this.dispatchUpdate();
   }
 
   get fps(): number {
@@ -71,6 +94,7 @@ export class GameStats {
         fps: this._fps,
         isFinished: this.isFinished,
         heroHasKey: this.heroHasKey,
+        elapsedTime: this.elapsedTime,
       })
     );
   }

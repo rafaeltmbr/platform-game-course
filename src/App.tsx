@@ -16,6 +16,7 @@ let phaser: Phaser.Game;
 function App() {
   const [isTouch, setIsTouch] = useState(false);
   const [gameStats, setGameStats] = useState<GameStatsUpdate>({
+    elapsedTime: 0,
     fps: 0,
     isFinished: false,
     heroHasKey: false,
@@ -35,15 +36,21 @@ function App() {
     phaser?.events.emit("reset");
   };
 
+  const time = (gameStats.elapsedTime / 1000).toFixed(2);
+
   return (
     <>
       <div id="game-container" />
-      <StatsBar fps={gameStats.fps} heroHasKey={gameStats.heroHasKey} />
+      <StatsBar
+        elapsedTime={gameStats.elapsedTime}
+        fps={gameStats.fps}
+        heroHasKey={gameStats.heroHasKey}
+      />
       {isTouch ? <Controls /> : null}
       {gameStats.isFinished && (
         <Banner
-          title="GG WP"
-          description="Thanks for playing!"
+          title="Congratulations"
+          description={`Game completed in ${time} ms.`}
           imageUrl={bannerImageUrl}
           onClose={handleBannerClose}
         />
