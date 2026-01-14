@@ -59,6 +59,7 @@ export class Start extends Phaser.Scene {
   private heroDieSound!: Phaser.Sound.WebAudioSound;
   private enemyDieSound!: Phaser.Sound.WebAudioSound;
   private gotKey: boolean = false;
+  private isGameFinished: boolean = false;
 
   constructor() {
     super("Start");
@@ -432,7 +433,7 @@ export class Start extends Phaser.Scene {
           this.heroDieSound.play();
         }
 
-        if (!this.themeSound.isPlaying) {
+        if (!this.themeSound.isPlaying && !this.isGameFinished) {
           this.themeSound.play();
         }
       },
@@ -484,6 +485,8 @@ export class Start extends Phaser.Scene {
         this.hero.active = false;
         this.cameras.main.stopFollow();
         this.game.events.emit("finished");
+        this.themeSound.pause();
+        this.isGameFinished = true;
       }
     });
 
@@ -502,6 +505,8 @@ export class Start extends Phaser.Scene {
       enemyColliders.forEach((collider) => collider.destroy());
       doorCollider.destroy();
       keyCollider.destroy();
+      this.themeSound.pause();
+      this.isGameFinished = true;
       this.cameras.main.stopFollow();
     });
   }
@@ -529,5 +534,6 @@ export class Start extends Phaser.Scene {
     this.addKey();
     this.addEnemies();
     this.addHero();
+    this.isGameFinished = false;
   }
 }
