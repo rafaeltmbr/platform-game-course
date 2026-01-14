@@ -17,5 +17,10 @@ export class Key extends Phaser.GameObjects.Sprite {
     scene.add.existing(this);
     scene.physics.add.existing(this, true);
     this.setOrigin(0.5, 1);
+
+    if (this.body instanceof Phaser.Physics.Arcade.StaticBody) {
+      this.body.setSize(20, 24);
+      this.body.setOffset(6, -12);
+    }
   }
 }

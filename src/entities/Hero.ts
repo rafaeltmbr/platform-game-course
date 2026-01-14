@@ -3,6 +3,9 @@ import Phaser from "phaser";
 import { StateMachine } from "../utils/StateMachine";
 import type { ControlsState } from "../components/controls";
 
+const COYOTE_JUMP_WINDOW_FRAMES = 10;
+const JUMP_BUFFER_WINDOW_FRAMES = 10;
+
 enum VerticalMovementState {
   STANDING = "STANDING",
   PRE_JUMPING = "PRE_JUMPING",
@@ -46,6 +49,8 @@ export default class Hero extends Phaser.GameObjects.Sprite {
   private didPressJump: boolean = false;
   private isOnFloor: boolean = false;
   private _isDead: boolean = false;
+  private coyoteJumpCountdown: number = 0;
+  private jumpBufferCountdown: number = 0;
 
   constructor(
     scene: Phaser.Scene,
@@ -84,7 +89,7 @@ export default class Hero extends Phaser.GameObjects.Sprite {
 
   private setupPhysics(body: Phaser.Physics.Arcade.Body) {
     body.setCollideWorldBounds(true);
-    body.setSize(15, 40);
+    body.setSize(12, 40);
     body.setOffset(10, 23);
     body.setMaxVelocity(250, 400);
     body.setDragX(750);
@@ -106,7 +111,7 @@ export default class Hero extends Phaser.GameObjects.Sprite {
       onEnter: () => {
         body.setAccelerationX(-1000);
         this.setFlipX(true);
-        body.setOffset(8, 23);
+        body.setOffset(10, 23);
       },
     });
     this.horizontalMovementSM.addState(HorizontalMovementState.TO_RIGHT, {
@@ -192,7 +197,11 @@ export default class Hero extends Phaser.GameObjects.Sprite {
     this.verticalMovementSM.addState(VerticalMovementState.STANDING, {});
 
     this.verticalMovementSM.addState(VerticalMovementState.PRE_JUMPING, {
-      onEnter: () => body.setVelocityY(-400),
+      onEnter: () => {
+        body.setVelocityY(-450);
+        this.coyoteJumpCountdown = 0;
+        this.jumpBufferCountdown = 0;
+      },
     });
 
     this.verticalMovementSM.addState(VerticalMovementState.JUMPING, {
@@ -211,7 +220,10 @@ export default class Hero extends Phaser.GameObjects.Sprite {
     });
 
     this.verticalMovementSM.addState(VerticalMovementState.FLIPPING, {
-      onEnter: () => body.setVelocityY(-300),
+      onEnter: () => {
+        body.setVelocityY(-300);
+        this.jumpBufferCountdown = 0;
+      },
     });
 
     this.verticalMovementSM.addState(VerticalMovementState.FALLING, {});
@@ -228,10 +240,11 @@ export default class Hero extends Phaser.GameObjects.Sprite {
       condition: () => this._isDead,
     });
 
-    this.verticalMovementSM.addTransition({
-      from: VerticalMovementState.STANDING,
+    this.verticalMovementSM.addTransitions({
+      from: [VerticalMovementState.STANDING, VerticalMovementState.FALLING],
       to: VerticalMovementState.PRE_JUMPING,
-      condition: () => this.isOnFloor && this.didPressJump,
+      condition: () =>
+        this.coyoteJumpCountdown > 0 && this.jumpBufferCountdown > 0,
     });
 
     this.verticalMovementSM.addTransition({
@@ -400,6 +413,14 @@ export default class Hero extends Phaser.GameObjects.Sprite {
     }
 
     this.isOnFloor = this.body.onFloor();
+
+    this.coyoteJumpCountdown = this.isOnFloor
+      ? COYOTE_JUMP_WINDOW_FRAMES
+      : Math.max(this.coyoteJumpCountdown - 1, 0);
+
+    this.jumpBufferCountdown = this.didPressJump
+      ? JUMP_BUFFER_WINDOW_FRAMES
+      : Math.max(this.jumpBufferCountdown - 1, 0);
 
     this.horizontalMovementSM.update();
     this.verticalMovementSM.update();

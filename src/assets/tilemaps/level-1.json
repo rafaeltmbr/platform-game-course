@@ -58,7 +58,7 @@
                  "type":"",
                  "visible":true,
                  "width":0,
-                 "x":48,
+                 "x":32,
                  "y":576
                 }, 
                 {
@@ -476,8 +476,8 @@
          "columns":1,
          "firstgid":185,
          "image":"..\/tilesets\/door.png",
-         "imageheight":68,
-         "imagewidth":68,
+         "imageheight":64,
+         "imagewidth":64,
          "margin":0,
          "name":"door",
          "spacing":0,

@@ -10,7 +10,7 @@
   <image source="../tilesets/clouds.png" width="800" height="224"/>
  </tileset>
  <tileset firstgid="185" name="door" tilewidth="64" tileheight="64" tilecount="1" columns="1">
-  <image source="../tilesets/door.png" width="68" height="68"/>
+  <image source="../tilesets/door.png" width="64" height="64"/>
  </tileset>
  <layer id="3" name="Background" width="40" height="20">
   <data encoding="base64">
@@ -28,7 +28,7 @@
   </data>
  </layer>
  <objectgroup id="4" name="Objects">
-  <object id="82" name="HeroStartingPoint" x="48" y="576">
+  <object id="82" name="HeroStartingPoint" x="32" y="576">
    <point/>
   </object>
   <object id="83" gid="7" x="352" y="640" width="32" height="32"/>

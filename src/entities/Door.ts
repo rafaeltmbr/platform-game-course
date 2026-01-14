@@ -5,7 +5,7 @@ interface Coordinates {
   y: number;
 }
 
-export class Door extends Phaser.Physics.Arcade.Sprite {
+export class Door extends Phaser.GameObjects.Sprite {
   constructor(
     scene: Phaser.Scene,
     coordinates: Coordinates,
@@ -17,7 +17,10 @@ export class Door extends Phaser.Physics.Arcade.Sprite {
     scene.add.existing(this);
     scene.physics.add.existing(this, true);
     this.setOrigin(0.5, 1);
-    this.setSize(32, 48);
-    this.setOffset(16, -16);
+
+    if (this.body instanceof Phaser.Physics.Arcade.StaticBody) {
+      this.body.setSize(32, 48);
+      this.body.setOffset(16, -16);
+    }
   }
 }
