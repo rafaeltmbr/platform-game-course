@@ -50,7 +50,7 @@ function App() {
       {gameStats.isFinished && (
         <Banner
           title="Congratulations"
-          description={`Game completed in ${time} ms.`}
+          description={`Game completed in ${time} s.`}
           imageUrl={bannerImageUrl}
           onClose={handleBannerClose}
         />

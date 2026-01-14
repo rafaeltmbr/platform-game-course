@@ -20,7 +20,7 @@ export const StatsBar: React.FC<StatsBarProps> = ({
   return (
     <div className="statsbar">
       <div className="row">
-        <p className="text">{`${time} ms`}</p>
+        <p className="text">{`${time} s`}</p>
       </div>
       <div className="row">
         <p className="text">{`${fps} fps`}</p>
