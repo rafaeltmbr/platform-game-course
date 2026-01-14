@@ -7,7 +7,7 @@ import "./App.css";
 import { Controls } from "./components/controls";
 import { Banner } from "./components/banner";
 
-import bannerImageUrl from "./assets/images/waifu.png";
+import bannerImageUrl from "./assets/images/wins.gif";
 
 let phaser: Phaser.Game;
 
@@ -35,7 +35,7 @@ function App() {
       {showBanner && (
         <Banner
           title="GG WP"
-          description="Thanks for playing!!"
+          description="Thanks for playing!"
           imageUrl={bannerImageUrl}
           onClose={handleBannerClose}
         />

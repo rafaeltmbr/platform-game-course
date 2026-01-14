@@ -18,7 +18,8 @@ import tileSet from "../assets/tilesets/world-1.png";
 import cloudsSet from "../assets/tilesets/clouds.png";
 import doorSet from "../assets/tilesets/door.png";
 
-import themeSoundFile from "../assets/music/time_for_adventure.mp3";
+import adventureTheme from "../assets/music/time_for_adventure.mp3";
+import winnerThemeFile from "../assets/music/hino.mp3";
 import jumpSoundFile from "../assets/sounds/jump.wav";
 import getKeySoundFile from "../assets/sounds/coin.wav";
 import heroDieSoundFile from "../assets/sounds/power_up.wav";
@@ -53,7 +54,8 @@ export class Start extends Phaser.Scene {
   private enemiesCoordinates: StartEndCoordinates[] = [];
   private doorCoordinates: Coordinates = { x: 0, y: 0 };
   private keyCoordinates: Coordinates = { x: 0, y: 0 };
-  private themeSound!: Phaser.Sound.WebAudioSound;
+  private adventureTheme!: Phaser.Sound.WebAudioSound;
+  private winnerTheme!: Phaser.Sound.WebAudioSound;
   private jumpSound!: Phaser.Sound.WebAudioSound;
   private getKeySound!: Phaser.Sound.WebAudioSound;
   private heroDieSound!: Phaser.Sound.WebAudioSound;
@@ -66,7 +68,8 @@ export class Start extends Phaser.Scene {
   }
 
   preload() {
-    this.load.audio("theme", themeSoundFile);
+    this.load.audio("adventure-theme", adventureTheme);
+    this.load.audio("winner-theme", winnerThemeFile);
     this.load.audio("jump", jumpSoundFile);
     this.load.audio("get-key", getKeySoundFile);
     this.load.audio("hero-die", heroDieSoundFile);
@@ -153,21 +156,30 @@ export class Start extends Phaser.Scene {
   }
 
   private setupAudio() {
-    this.themeSound = this.sound.add("theme", {
-      volume: 0.4,
+    this.adventureTheme = this.sound.add("adventure-theme", {
+      volume: 0.6,
       loop: true,
     }) as Phaser.Sound.WebAudioSound;
-    this.jumpSound = this.sound.add("jump", {
-      volume: 0.15,
+
+    this.winnerTheme = this.sound.add("winner-theme", {
+      volume: 0.6,
+      loop: true,
     }) as Phaser.Sound.WebAudioSound;
-    this.getKeySound = this.sound.add("get-key", {
+
+    this.jumpSound = this.sound.add("jump", {
       volume: 0.3,
     }) as Phaser.Sound.WebAudioSound;
-    this.heroDieSound = this.sound.add("hero-die", {
-      volume: 0.2,
+
+    this.getKeySound = this.sound.add("get-key", {
+      volume: 0.4,
     }) as Phaser.Sound.WebAudioSound;
+
+    this.heroDieSound = this.sound.add("hero-die", {
+      volume: 0.4,
+    }) as Phaser.Sound.WebAudioSound;
+
     this.enemyDieSound = this.sound.add("enemy-die", {
-      volume: 0.15,
+      volume: 0.3,
     }) as Phaser.Sound.WebAudioSound;
   }
 
@@ -433,8 +445,8 @@ export class Start extends Phaser.Scene {
           this.heroDieSound.play();
         }
 
-        if (!this.themeSound.isPlaying && !this.isGameFinished) {
-          this.themeSound.play();
+        if (!this.adventureTheme.isPlaying && !this.isGameFinished) {
+          this.adventureTheme.play();
         }
       },
       cursorKeys,
@@ -485,7 +497,8 @@ export class Start extends Phaser.Scene {
         this.hero.active = false;
         this.cameras.main.stopFollow();
         this.game.events.emit("finished");
-        this.themeSound.pause();
+        this.adventureTheme.stop();
+        this.winnerTheme.play();
         this.isGameFinished = true;
       }
     });
@@ -505,7 +518,7 @@ export class Start extends Phaser.Scene {
       enemyColliders.forEach((collider) => collider.destroy());
       doorCollider.destroy();
       keyCollider.destroy();
-      this.themeSound.pause();
+      this.adventureTheme.stop();
       this.isGameFinished = true;
       this.cameras.main.stopFollow();
     });
@@ -535,5 +548,8 @@ export class Start extends Phaser.Scene {
     this.addEnemies();
     this.addHero();
     this.isGameFinished = false;
+    if (this.winnerTheme.isPlaying) {
+      this.winnerTheme.stop();
+    }
   }
 }
