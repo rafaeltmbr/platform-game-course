@@ -1,0 +1,32 @@
+.fullscreen {
+  position: absolute;
+  top: 0;
+  right: 0;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  z-index: 1000;
+}
+
+.fullscreen .button {
+  width: 3rem;
+  height: 3rem;
+  margin: 1rem 1rem 0 0;
+  border-radius: 0.25rem;
+  background-color: rgba(0, 0, 0, 0.25);
+  cursor: pointer;
+  transition-duration: 250ms;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  color: white;
+  font-size: 2rem;
+}
+
+.fullscreen .button:hover {
+  background-color: rgba(0, 0, 0, 0.5);
+}

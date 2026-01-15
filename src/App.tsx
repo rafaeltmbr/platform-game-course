@@ -12,6 +12,7 @@ import pausedGameImage from "./assets/images/controls.png";
 
 import { GameStatus, type GameStatsUpdate } from "./valueObjects/GameStats";
 import { StatsBar } from "./components/statsbar";
+import { Fullscreen } from "./components/fullscreen";
 
 let phaser: Phaser.Game;
 
@@ -48,6 +49,7 @@ function App() {
         fps={gameStats.fps}
         heroHasKey={gameStats.heroHasKey}
       />
+      <Fullscreen />
       {isTouch ? <Controls /> : null}
       {gameStats.status === GameStatus.PAUSED && (
         <Banner
