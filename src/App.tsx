@@ -51,7 +51,7 @@ function App() {
       {isTouch ? <Controls /> : null}
       {gameStats.status === GameStatus.PAUSED && (
         <Banner
-          title="GAME PAUSED"
+          title="MOVEMENT CONTROLS"
           description="Press any movement key to start the game."
           imageUrl={pausedGameImage}
         />
