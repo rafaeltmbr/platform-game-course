@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 
 import "./styles.css";
 
@@ -14,6 +14,20 @@ export const Banner: React.FC<BannerProps> = ({
   imageUrl,
   onClose,
 }) => {
+  useEffect(() => {
+    if (!onClose) return;
+
+    const listener = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        onClose();
+      }
+    };
+
+    document.addEventListener("keydown", listener);
+
+    return () => document.removeEventListener("keydown", listener);
+  }, []);
+
   return (
     <div className="banner">
       <div className="content-wrapper">
