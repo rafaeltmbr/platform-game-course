@@ -259,8 +259,8 @@ export default class Hero extends Phaser.GameObjects.Sprite {
       condition: () => !this.isOnFloor,
     });
 
-    this.verticalMovementSM.addTransition({
-      from: VerticalMovementState.JUMPING,
+    this.verticalMovementSM.addTransitions({
+      from: [VerticalMovementState.JUMPING, VerticalMovementState.FALLING],
       to: VerticalMovementState.FLIPPING,
       condition: () => this.didPressJump,
     });
