@@ -14,6 +14,10 @@ const config = {
   render: {
     pixelArt: true,
   },
+  fps: {
+    target: 1_000,
+    forceSetTimeOut: true,
+  },
   physics: {
     default: "arcade",
     arcade: {

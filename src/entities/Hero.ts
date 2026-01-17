@@ -3,8 +3,8 @@ import Phaser from "phaser";
 import { StateMachine } from "../utils/StateMachine";
 import type { ControlsState } from "../components/controls";
 
-const COYOTE_JUMP_WINDOW_FRAMES = 10;
-const JUMP_BUFFER_WINDOW_FRAMES = 10;
+const COYOTE_JUMP_WINDOW_MS = 150;
+const JUMP_BUFFER_WINDOW_MS = 150;
 
 enum VerticalMovementState {
   STANDING = "STANDING",
@@ -40,17 +40,23 @@ export interface TextKeys {
 }
 
 export default class Hero extends Phaser.GameObjects.Sprite {
-  private verticalMovementSM = new StateMachine(VerticalMovementState.STANDING);
-  private horizontalMovementSM = new StateMachine(
-    HorizontalMovementState.STILL
+  private verticalMovementSM = new StateMachine(
+    VerticalMovementState.STANDING,
+    console.log.bind(console),
   );
-  private animationSM = new StateMachine(AnimationState.IDLE);
+  private horizontalMovementSM = new StateMachine(
+    HorizontalMovementState.STILL,
+  );
+  private animationSM = new StateMachine(
+    AnimationState.IDLE,
+    //console.log.bind(console),
+  );
 
   private didPressJump: boolean = false;
   private isOnFloor: boolean = false;
   private _isDead: boolean = false;
-  private coyoteJumpCountdown: number = 0;
-  private jumpBufferCountdown: number = 0;
+  private coyoteJumpMaxTime: number = 0;
+  private jumpBufferMaxTime: number = 0;
 
   constructor(
     scene: Phaser.Scene,
@@ -61,7 +67,7 @@ export default class Hero extends Phaser.GameObjects.Sprite {
     private onAnimationStateChange: (state: AnimationState) => void,
     private cursorKeys?: Phaser.Types.Input.Keyboard.CursorKeys,
     private textKeys?: TextKeys,
-    private controlsState?: ControlsState
+    private controlsState?: ControlsState,
   ) {
     super(scene, x, y, texture, frame);
 
@@ -72,7 +78,7 @@ export default class Hero extends Phaser.GameObjects.Sprite {
 
     if (!(body instanceof Phaser.Physics.Arcade.Body)) {
       throw new Error(
-        "Hero class expected the Arcade physics engine to be available."
+        "Hero class expected the Arcade physics engine to be available.",
       );
     }
 
@@ -199,8 +205,8 @@ export default class Hero extends Phaser.GameObjects.Sprite {
     this.verticalMovementSM.addState(VerticalMovementState.PRE_JUMPING, {
       onEnter: () => {
         body.setVelocityY(-450);
-        this.coyoteJumpCountdown = 0;
-        this.jumpBufferCountdown = 0;
+        this.coyoteJumpMaxTime = 0;
+        this.jumpBufferMaxTime = 0;
       },
     });
 
@@ -222,7 +228,7 @@ export default class Hero extends Phaser.GameObjects.Sprite {
     this.verticalMovementSM.addState(VerticalMovementState.FLIPPING, {
       onEnter: () => {
         body.setVelocityY(-300);
-        this.jumpBufferCountdown = 0;
+        this.jumpBufferMaxTime = 0;
       },
     });
 
@@ -244,13 +250,14 @@ export default class Hero extends Phaser.GameObjects.Sprite {
       from: [VerticalMovementState.STANDING, VerticalMovementState.FALLING],
       to: VerticalMovementState.PRE_JUMPING,
       condition: () =>
-        this.coyoteJumpCountdown > 0 && this.jumpBufferCountdown > 0,
+        this.coyoteJumpMaxTime >= Date.now() &&
+        this.jumpBufferMaxTime >= Date.now(),
     });
 
     this.verticalMovementSM.addTransition({
       from: VerticalMovementState.PRE_JUMPING,
       to: VerticalMovementState.JUMPING,
-      condition: () => body.velocity.y < 0,
+      condition: () => !this.isOnFloor && body.velocity.y < 0,
     });
 
     this.verticalMovementSM.addTransition({
@@ -421,13 +428,13 @@ export default class Hero extends Phaser.GameObjects.Sprite {
 
     this.isOnFloor = this.body.onFloor();
 
-    this.coyoteJumpCountdown = this.isOnFloor
-      ? COYOTE_JUMP_WINDOW_FRAMES
-      : Math.max(this.coyoteJumpCountdown - 1, 0);
+    if (this.isOnFloor) {
+      this.coyoteJumpMaxTime = Date.now() + COYOTE_JUMP_WINDOW_MS;
+    }
 
-    this.jumpBufferCountdown = this.didPressJump
-      ? JUMP_BUFFER_WINDOW_FRAMES
-      : Math.max(this.jumpBufferCountdown - 1, 0);
+    if (this.didPressJump) {
+      this.jumpBufferMaxTime = Date.now() + JUMP_BUFFER_WINDOW_MS;
+    }
 
     this.horizontalMovementSM.update();
     this.verticalMovementSM.update();
